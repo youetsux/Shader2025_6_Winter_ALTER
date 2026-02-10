@@ -197,4 +197,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="NormalMapping_Implementation_Guide.txt" />
+  </ItemGroup>
 </Project>

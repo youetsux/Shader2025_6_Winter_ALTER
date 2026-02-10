@@ -1,0 +1,883 @@
+================================================================================
+FBX SDK を使用したノーマルマップ実装ガイド
+================================================================================
+
+【要件】
+- FBX SDK を使用してモデルから tangent と binormal を読み取る
+- ノーマルマップの画像は FBX からではなく自分で指定したものを読み込む
+- 授業用に段階的に実装できるようにステップを分ける
+- ノーマルマップがあるモデルとないモデルの両方に対応
+
+================================================================================
+実装ステップ（8段階）
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ステップ1: 頂点構造体の拡張】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+目的: ノーマルマッピングに必要な tangent（接線）と binormal（従法線）を
+      頂点データに追加する
+
+変更ファイル: Engine\Fbx.h
+
+変更内容:
+----------------------------------------
+struct VERTEX
+{
+    XMVECTOR position;
+    XMVECTOR uv;
+    XMVECTOR normal;
+    XMVECTOR tangent;   // 追加: 接線ベクトル
+    XMVECTOR binormal;  // 追加: 従法線ベクトル
+};
+----------------------------------------
+
+理由:
+ノーマルマッピングでは、テクスチャ空間（Tangent Space）での法線情報を
+ワールド空間に変換する必要があります。そのために tangent と binormal が
+必要です。これらは normal と組み合わせて TBN 行列を構成します。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ステップ2: FBX から Tangent/Binormal の読み込み】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+目的: FBX ファイルに tangent/binormal が含まれている場合は読み込む
+
+変更ファイル: Engine\Fbx.cpp の InitVertex() 関数
+
+変更内容:
+----------------------------------------
+void Fbx::InitVertex(FbxMesh* mesh)
+{
+    pVertices_.resize(polygonCount_ * 3);
+    vertexCount_ = polygonCount_ * 3;
+    int vertexIndex = 0;
+
+    for (long poly = 0; poly < polygonCount_; poly++)
+    {
+        for (int vertex = 0; vertex < 3; vertex++)
+        {
+            int controlPointIndex = mesh->GetPolygonVertex(poly, vertex);
+
+            // ========== 既存コード: 位置 ==========
+            FbxVector4 pos = mesh->GetControlPointAt(controlPointIndex);
+            pVertices_[vertexIndex].position = XMVectorSet(
+                (float)pos[0], (float)pos[1], (float)pos[2], 0.0f);
+
+            // ========== 既存コード: UV ==========
+            FbxLayerElementUV* pUV = mesh->GetLayer(0)->GetUVs();
+            int uvIndex = mesh->GetTextureUVIndex(poly, vertex, 
+                                                   FbxLayerElement::eTextureDiffuse);
+            FbxVector2 uv = pUV->GetDirectArray().GetAt(uvIndex);
+            pVertices_[vertexIndex].uv = XMVectorSet(
+                (float)uv.mData[0], (float)(1.0f - uv.mData[1]), 0.0f, 1.0f);
+
+            // ========== 既存コード: 法線 ==========
+            FbxVector4 normal;
+            mesh->GetPolygonVertexNormal(poly, vertex, normal);
+            pVertices_[vertexIndex].normal = XMVectorSet(
+                (float)normal[0], (float)normal[1], (float)normal[2], 0.0f);
+
+            // ========== 追加: Tangent（接線）の読み込み ==========
+            FbxGeometryElementTangent* pTangentElement = mesh->GetElementTangent(0);
+            if (pTangentElement)
+            {
+                int tangentIndex = 0;
+                if (pTangentElement->GetMappingMode() == 
+                    FbxGeometryElement::eByPolygonVertex)
+                {
+                    if (pTangentElement->GetReferenceMode() == 
+                        FbxGeometryElement::eDirect)
+                    {
+                        tangentIndex = poly * 3 + vertex;
+                    }
+                    else if (pTangentElement->GetReferenceMode() == 
+                             FbxGeometryElement::eIndexToDirect)
+                    {
+                        tangentIndex = pTangentElement->GetIndexArray()
+                                                       .GetAt(poly * 3 + vertex);
+                    }
+                }
+                FbxVector4 tangent = pTangentElement->GetDirectArray()
+                                                     .GetAt(tangentIndex);
+                pVertices_[vertexIndex].tangent = XMVectorSet(
+                    (float)tangent[0], (float)tangent[1], (float)tangent[2], 0.0f);
+            }
+            else
+            {
+                // Tangent がない場合は仮の値を設定（ステップ3で計算）
+                pVertices_[vertexIndex].tangent = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+            }
+
+            // ========== 追加: Binormal（従法線）の読み込み ==========
+            FbxGeometryElementBinormal* pBinormalElement = mesh->GetElementBinormal(0);
+            if (pBinormalElement)
+            {
+                int binormalIndex = 0;
+                if (pBinormalElement->GetMappingMode() == 
+                    FbxGeometryElement::eByPolygonVertex)
+                {
+                    if (pBinormalElement->GetReferenceMode() == 
+                        FbxGeometryElement::eDirect)
+                    {
+                        binormalIndex = poly * 3 + vertex;
+                    }
+                    else if (pBinormalElement->GetReferenceMode() == 
+                             FbxGeometryElement::eIndexToDirect)
+                    {
+                        binormalIndex = pBinormalElement->GetIndexArray()
+                                                         .GetAt(poly * 3 + vertex);
+                    }
+                }
+                FbxVector4 binormal = pBinormalElement->GetDirectArray()
+                                                       .GetAt(binormalIndex);
+                pVertices_[vertexIndex].binormal = XMVectorSet(
+                    (float)binormal[0], (float)binormal[1], (float)binormal[2], 0.0f);
+            }
+            else
+            {
+                // Binormal がない場合は仮の値を設定（ステップ3で計算）
+                pVertices_[vertexIndex].binormal = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+            }
+
+            vertexIndex++;
+        }
+    }
+
+    // ========== 頂点バッファ作成（サイズが変わることに注意）==========
+    HRESULT hr;
+    D3D11_BUFFER_DESC bd_vertex;
+    bd_vertex.ByteWidth = sizeof(VERTEX) * vertexCount_;
+    bd_vertex.Usage = D3D11_USAGE_DEFAULT;
+    bd_vertex.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bd_vertex.CPUAccessFlags = 0;
+    bd_vertex.MiscFlags = 0;
+    bd_vertex.StructureByteStride = 0;
+    D3D11_SUBRESOURCE_DATA data_vertex;
+    data_vertex.pSysMem = pVertices_.data();
+    hr = Direct3D::pDevice->CreateBuffer(&bd_vertex, &data_vertex, &pVertexBuffer_);
+    if (FAILED(hr))
+    {
+        MessageBox(NULL, L"頂点バッファの作成に失敗しました", L"エラー", MB_OK);
+    }
+
+    // ステップ3の関数を呼び出し（後で追加）
+    CalculateTangentsAndBinormals();
+}
+----------------------------------------
+
+重要ポイント:
+1. FBX SDK の GetElementTangent() と GetElementBinormal() を使用
+2. MappingMode と ReferenceMode に応じてインデックスを取得
+3. FBX にデータがない場合は仮の値を設定し、ステップ3で計算
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ステップ3: Tangent/Binormal の手動計算】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+目的: FBX に tangent/binormal がない場合、UV 座標と頂点位置から計算する
+
+変更ファイル: 
+- Engine\Fbx.cpp（新しい関数を追加）
+- Engine\Fbx.h（関数宣言を追加）
+
+Fbx.h に追加:
+----------------------------------------
+class Fbx
+{
+    // ... 既存のメンバー ...
+    
+    void CalculateTangentsAndBinormals(); // 追加
+};
+----------------------------------------
+
+Fbx.cpp に追加:
+----------------------------------------
+void Fbx::CalculateTangentsAndBinormals()
+{
+    // 各三角形について tangent と binormal を計算
+    for (int i = 0; i < vertexCount_; i += 3)
+    {
+        VERTEX& v0 = pVertices_[i + 0];
+        VERTEX& v1 = pVertices_[i + 1];
+        VERTEX& v2 = pVertices_[i + 2];
+
+        // ========== エッジベクトルの計算 ==========
+        XMVECTOR edge1 = XMVectorSubtract(v1.position, v0.position);
+        XMVECTOR edge2 = XMVectorSubtract(v2.position, v0.position);
+
+        // ========== UV デルタの計算 ==========
+        float deltaU1 = XMVectorGetX(v1.uv) - XMVectorGetX(v0.uv);
+        float deltaV1 = XMVectorGetY(v1.uv) - XMVectorGetY(v0.uv);
+        float deltaU2 = XMVectorGetX(v2.uv) - XMVectorGetX(v0.uv);
+        float deltaV2 = XMVectorGetY(v2.uv) - XMVectorGetY(v0.uv);
+
+        // ========== 係数の計算（ゼロ除算対策）==========
+        float denominator = deltaU1 * deltaV2 - deltaU2 * deltaV1;
+        float f = (fabs(denominator) > 1e-6f) ? (1.0f / denominator) : 0.0f;
+
+        // ========== Tangent の計算 ==========
+        XMVECTOR tangent = XMVectorSet(
+            f * (deltaV2 * XMVectorGetX(edge1) - deltaV1 * XMVectorGetX(edge2)),
+            f * (deltaV2 * XMVectorGetY(edge1) - deltaV1 * XMVectorGetY(edge2)),
+            f * (deltaV2 * XMVectorGetZ(edge1) - deltaV1 * XMVectorGetZ(edge2)),
+            0.0f
+        );
+        tangent = XMVector3Normalize(tangent);
+
+        // ========== Binormal の計算 ==========
+        XMVECTOR binormal = XMVectorSet(
+            f * (-deltaU2 * XMVectorGetX(edge1) + deltaU1 * XMVectorGetX(edge2)),
+            f * (-deltaU2 * XMVectorGetY(edge1) + deltaU1 * XMVectorGetY(edge2)),
+            f * (-deltaU2 * XMVectorGetZ(edge1) + deltaU1 * XMVectorGetZ(edge2)),
+            0.0f
+        );
+        binormal = XMVector3Normalize(binormal);
+
+        // ========== 3頂点に同じ値を設定 ==========
+        v0.tangent = tangent;
+        v1.tangent = tangent;
+        v2.tangent = tangent;
+        v0.binormal = binormal;
+        v1.binormal = binormal;
+        v2.binormal = binormal;
+    }
+}
+----------------------------------------
+
+計算の理論:
+三角形の2つのエッジベクトルとUV座標の変化から、
+テクスチャ空間の座標軸（tangent と binormal）を求める数式:
+
+  tangent   = (deltaV2 * edge1 - deltaV1 * edge2) / (deltaU1*deltaV2 - deltaU2*deltaV1)
+  binormal  = (-deltaU2 * edge1 + deltaU1 * edge2) / (deltaU1*deltaV2 - deltaU2*deltaV1)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ステップ4: 入力レイアウトの更新】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+目的: GPU に送る頂点データのフォーマットに tangent と binormal を追加
+
+変更ファイル: Engine\Direct3D.cpp の InitShader() 関数内
+
+変更箇所を探す:
+InitShader() 関数内で、SHADER_3D 用の入力レイアウトを定義している部分
+
+変更内容:
+----------------------------------------
+// Simple3D 用の入力レイアウト
+D3D11_INPUT_ELEMENT_DESC layout[] = {
+    { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,  0, 
+      D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, 
+      D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    { "NORMAL",   0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 32, 
+      D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    { "TANGENT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 48, 
+      D3D11_INPUT_PER_VERTEX_DATA, 0 },  // 追加
+    { "BINORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 64, 
+      D3D11_INPUT_PER_VERTEX_DATA, 0 },  // 追加
+};
+----------------------------------------
+
+オフセット計算:
+- POSITION:  0 bytes (4 floats = 16 bytes)
+- TEXCOORD: 16 bytes (4 floats = 16 bytes)
+- NORMAL:   32 bytes (4 floats = 16 bytes)
+- TANGENT:  48 bytes (4 floats = 16 bytes) ← 追加
+- BINORMAL: 64 bytes (4 floats = 16 bytes) ← 追加
+合計: 80 bytes
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ステップ5: シェーダーの頂点入力/出力の修正】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+目的: 頂点シェーダーで tangent と binormal を受け取り、
+      ピクセルシェーダーに渡す
+
+変更ファイル: Simple3D.hlsl
+
+変更内容:
+----------------------------------------
+// ========== 頂点シェーダー出力/ピクセルシェーダー入力構造体 ==========
+struct VS_OUT
+{
+    float4 wpos : POSITION0;
+    float4 spos : SV_POSITION;
+    float2 uv : TEXCOORD;
+    float4 normal : NORMAL;
+    float4 tangent : TANGENT;   // 追加
+    float4 binormal : BINORMAL; // 追加
+    float4 eyev : POSITION1;
+};
+
+// ========== 頂点シェーダー ==========
+VS_OUT VS(float4 pos : POSITION, float4 uv : TEXCOORD, float4 normal : NORMAL,
+          float4 tangent : TANGENT, float4 binormal : BINORMAL)
+{
+    VS_OUT output;
+    
+    // 位置変換（既存）
+    output.spos = mul(pos, matWVP);
+    output.wpos = mul(pos, matWorld);
+    
+    // 法線変換（既存）
+    normal.w = 0;
+    output.normal = mul(normal, matNormal);
+    
+    // ★追加: Tangent 変換
+    tangent.w = 0;
+    output.tangent = mul(tangent, matNormal);
+    
+    // ★追加: Binormal 変換
+    binormal.w = 0;
+    output.binormal = mul(binormal, matNormal);
+    
+    // UV と視線ベクトル（既存）
+    output.uv = uv.xy;
+    output.eyev = output.wpos - eyePosition;
+    
+    return output;
+}
+----------------------------------------
+
+重要ポイント:
+- tangent と binormal も法線と同様に matNormal で変換
+- w 成分は 0 にする（ベクトルであるため、平行移動の影響を受けない）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ステップ6: マテリアル構造体にノーマルマップを追加】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+目的: 各マテリアルにノーマルマップテクスチャを保持できるようにする
+
+変更ファイル: Engine\Fbx.h
+
+変更内容:
+----------------------------------------
+struct MATERIAL
+{
+    Texture* pTexture;
+    Texture* pNormalMap;  // ★追加: ノーマルマップテクスチャ
+    XMFLOAT4 diffuse;
+    XMFLOAT4 ambient;
+    XMFLOAT4 specular;
+    float    shininess;
+    XMFLOAT4 factor;
+};
+----------------------------------------
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ステップ7: ノーマルマップの読み込みとフラグ設定】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+目的: 
+1. ノーマルマップ画像を読み込む
+2. ノーマルマップの有無をシェーダーに伝えるフラグを追加
+
+【7-1: コンスタントバッファにフラグを追加】
+変更ファイル: Engine\Fbx.h
+
+変更内容:
+----------------------------------------
+struct CONSTANT_BUFFER
+{
+    XMMATRIX    matWVP;
+    XMMATRIX    matWorld;
+    XMMATRIX    matNormal;
+    XMFLOAT4    diffuse;
+    XMFLOAT4    diffuseFactor;
+    XMFLOAT4    specular;
+    XMFLOAT4    shininess;
+    XMFLOAT4    ambient;
+    BOOL        materialFlag;      // ディフューズテクスチャの有無
+    BOOL        hasNormalMap;      // ★追加: ノーマルマップの有無
+    XMFLOAT2    padding;           // アライメント調整（16バイト境界）
+};
+----------------------------------------
+
+【7-2: InitMaterial() でノーマルマップを読み込む】
+変更ファイル: Engine\Fbx.cpp
+
+変更内容:
+----------------------------------------
+void Fbx::InitMaterial(FbxNode* pNode)
+{
+    pMaterialList_.resize(materialCount_);
+    for (int i = 0; i < materialCount_; i++)
+    {
+        // ========== 既存: ディフューズテクスチャの読み込み ==========
+        FbxSurfaceMaterial* pMaterial = pNode->GetMaterial(i);
+        FbxProperty lProperty = pMaterial->FindProperty(FbxSurfaceMaterial::sDiffuse);
+        int fileTextureCount = lProperty.GetSrcObjectCount<FbxFileTexture>();
+
+        if (fileTextureCount > 0)
+        {
+            FbxFileTexture* textureInfo = lProperty.GetSrcObject<FbxFileTexture>(0);
+            const char* textureFilePath = textureInfo->GetRelativeFileName();
+            fs::path tPath(textureFilePath);
+            
+            if (fs::is_regular_file(tPath))
+            {
+                pMaterialList_[i].pTexture = new Texture;
+                pMaterialList_[i].pTexture->Load(tPath.string());
+            }
+            else
+            {
+                pMaterialList_[i].pTexture = nullptr;
+            }
+            
+            // マテリアルプロパティの設定（既存コード）
+            FbxSurfacePhong* pPhong = (FbxSurfacePhong*)pNode->GetMaterial(i);
+            FbxDouble diffuse = pPhong->DiffuseFactor;
+            FbxDouble3 diffuseColor = pPhong->Diffuse;
+            FbxDouble3 ambient = pPhong->Ambient;
+            pMaterialList_[i].diffuse = XMFLOAT4((float)diffuseColor[0], 
+                                                 (float)diffuseColor[1], 
+                                                 (float)diffuseColor[2], 1.0f);
+            pMaterialList_[i].factor = XMFLOAT4((float)diffuse, (float)diffuse, 
+                                                (float)diffuse, (float)diffuse);
+            pMaterialList_[i].ambient = {(float)ambient[0], (float)ambient[1], 
+                                         (float)ambient[2], 1.0f};
+            
+            if (pPhong->GetClassId().Is(FbxSurfacePhong::ClassId))
+            {
+                FbxDouble3 specular = pPhong->Specular;
+                FbxDouble shininess = pPhong->Shininess;
+                pMaterialList_[i].specular = {(float)specular[0], (float)specular[1], 
+                                              (float)specular[2], 1.0f};
+                pMaterialList_[i].shininess = shininess;
+            }
+        }
+        else
+        {
+            pMaterialList_[i].pTexture = nullptr;
+            // マテリアルカラーの設定（既存コード）
+            // ...
+        }
+
+        // ========== ★追加: ノーマルマップの読み込み ==========
+        pMaterialList_[i].pNormalMap = nullptr;
+        
+        // 方法1: 命名規則で自動検出
+        // 例: "diffuse.png" → "diffuse_normal.png" を探す
+        if (pMaterialList_[i].pTexture)
+        {
+            std::string diffusePath = textureFilePath;
+            size_t dotPos = diffusePath.find_last_of('.');
+            if (dotPos != std::string::npos)
+            {
+                std::string normalMapPath = diffusePath.substr(0, dotPos) + 
+                                           "_normal" + 
+                                           diffusePath.substr(dotPos);
+                if (fs::exists(normalMapPath))
+                {
+                    pMaterialList_[i].pNormalMap = new Texture();
+                    pMaterialList_[i].pNormalMap->Load(normalMapPath);
+                }
+            }
+        }
+        
+        // 方法2: 固定ファイル名で読み込む
+        // std::string normalMapFile = "MyNormalMap.png";
+        // if (fs::exists("Assets/" + normalMapFile))
+        // {
+        //     pMaterialList_[i].pNormalMap = new Texture();
+        //     pMaterialList_[i].pNormalMap->Load(normalMapFile);
+        // }
+        
+        // 方法3: マテリアルインデックスごとに指定
+        // if (i == 0) // 最初のマテリアルのみノーマルマップを使用
+        // {
+        //     pMaterialList_[i].pNormalMap = new Texture();
+        //     pMaterialList_[i].pNormalMap->Load("SpecificNormalMap.png");
+        // }
+    }
+}
+----------------------------------------
+
+ノーマルマップ読み込みの選択肢:
+1. 命名規則: "texture.png" → "texture_normal.png" を自動検出
+2. 固定ファイル名: すべてのマテリアルで同じノーマルマップを使用
+3. マテリアルごとに個別指定: 特定のマテリアルのみノーマルマップを適用
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ステップ8: 描画処理の修正とシェーダーでの適用】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+目的: ノーマルマップをシェーダーに送り、ライティング計算に適用
+
+【8-1: Draw() メソッドの修正】
+変更ファイル: Engine\Fbx.cpp
+
+変更内容:
+----------------------------------------
+void Fbx::Draw(Transform& transform)
+{
+    Direct3D::SetShader(SHADER_3D);
+    transform.Calculation();
+
+    UINT stride = sizeof(VERTEX);
+    UINT offset = 0;
+    Direct3D::pContext->IASetVertexBuffers(0, 1, &pVertexBuffer_, &stride, &offset);
+
+    for (int i = 0; i < materialCount_; i++)
+    {
+        CONSTANT_BUFFER cb;
+        cb.matWVP = transform.GetWorldMatrix() * 
+                   Camera::GetViewMatrix() * 
+                   Camera::GetProjectionMatrix();
+        cb.matWorld = transform.GetWorldMatrix();
+        cb.matNormal = transform.GetNormalMatrix();
+        cb.ambient = pMaterialList_[i].ambient;
+        cb.specular = pMaterialList_[i].specular;
+        cb.shininess = {pMaterialList_[i].shininess, 
+                        pMaterialList_[i].shininess, 
+                        pMaterialList_[i].shininess, 
+                        pMaterialList_[i].shininess};
+        cb.diffuse = pMaterialList_[i].diffuse;
+        cb.diffuseFactor = pMaterialList_[i].factor;
+        cb.materialFlag = pMaterialList_[i].pTexture != nullptr;
+        cb.hasNormalMap = pMaterialList_[i].pNormalMap != nullptr; // ★追加
+
+        // コンスタントバッファ更新
+        D3D11_MAPPED_SUBRESOURCE pdata;
+        Direct3D::pContext->Map(pConstantBuffer_, 0, D3D11_MAP_WRITE_DISCARD, 0, &pdata);
+        memcpy_s(pdata.pData, pdata.RowPitch, (void*)(&cb), sizeof(cb));
+        Direct3D::pContext->Unmap(pConstantBuffer_, 0);
+
+        // インデックスバッファ
+        Direct3D::pContext->IASetIndexBuffer(pIndexBuffer_[i], DXGI_FORMAT_R32_UINT, 0);
+
+        // コンスタントバッファセット
+        Direct3D::pContext->VSSetConstantBuffers(0, 1, &pConstantBuffer_);
+        Direct3D::pContext->PSSetConstantBuffers(0, 1, &pConstantBuffer_);
+
+        // ========== ディフューズテクスチャ（既存）==========
+        if (pMaterialList_[i].pTexture)
+        {
+            ID3D11SamplerState* pSampler = pMaterialList_[i].pTexture->GetSampler();
+            Direct3D::pContext->PSSetSamplers(0, 1, &pSampler);
+
+            ID3D11ShaderResourceView* pSRV = pMaterialList_[i].pTexture->GetSRV();
+            Direct3D::pContext->PSSetShaderResources(0, 1, &pSRV);
+        }
+
+        // ========== ★追加: ノーマルマップ ==========
+        if (pMaterialList_[i].pNormalMap)
+        {
+            ID3D11ShaderResourceView* pNormalSRV = 
+                pMaterialList_[i].pNormalMap->GetSRV();
+            Direct3D::pContext->PSSetShaderResources(1, 1, &pNormalSRV);
+        }
+        else
+        {
+            // ノーマルマップがない場合は null をセット（重要！）
+            ID3D11ShaderResourceView* pNull = nullptr;
+            Direct3D::pContext->PSSetShaderResources(1, 1, &pNull);
+        }
+
+        // 描画
+        Direct3D::pContext->DrawIndexed(indexCount_[i], 0, 0);
+    }
+}
+----------------------------------------
+
+重要ポイント:
+- ノーマルマップはスロット 1 (register(t1)) にバインド
+- ノーマルマップがない場合は必ず nullptr をセット
+
+
+【8-2: ピクセルシェーダーの完全版】
+変更ファイル: Simple3D.hlsl
+
+変更内容:
+----------------------------------------
+//───────────────────────────────────────
+// テクスチャ＆サンプラーデータのグローバル変数定義
+//───────────────────────────────────────
+Texture2D g_texture : register(t0);    // ディフューズテクスチャ
+Texture2D g_normalMap : register(t1);  // ★追加: ノーマルマップ
+SamplerState g_sampler : register(s0);
+
+//───────────────────────────────────────
+// コンスタントバッファ
+//───────────────────────────────────────
+cbuffer global : register(b0)
+{
+    row_major float4x4  matWVP;
+    row_major float4x4  matWorld;
+    row_major float4x4  matNormal;
+    float4 diffuseColor;
+    float4 diffusefactor;
+    float4 specular;
+    float4 shininess;
+    float4 ambient;
+    bool useTexture;
+    bool hasNormalMap;  // ★追加
+};
+
+cbuffer gStage : register(b1)
+{
+    float4 lightPosition;
+    float4 eyePosition;
+};
+
+//───────────────────────────────────────
+// 頂点シェーダー出力＆ピクセルシェーダー入力データ構造体
+//───────────────────────────────────────
+struct VS_OUT
+{
+    float4 wpos : POSITION0;
+    float4 spos : SV_POSITION;
+    float2 uv : TEXCOORD;
+    float4 normal : NORMAL;
+    float4 tangent : TANGENT;   // ★追加
+    float4 binormal : BINORMAL; // ★追加
+    float4 eyev : POSITION1;
+};
+
+//───────────────────────────────────────
+// 頂点シェーダ（変更済み - ステップ5参照）
+//───────────────────────────────────────
+VS_OUT VS(float4 pos : POSITION, float4 uv : TEXCOORD, float4 normal : NORMAL,
+          float4 tangent : TANGENT, float4 binormal : BINORMAL)
+{
+    VS_OUT outData;
+    outData.spos = mul(pos, matWVP);
+    outData.wpos = mul(pos, matWorld);
+    
+    normal.w = 0;
+    outData.normal = mul(normal, matNormal);
+    
+    tangent.w = 0;
+    outData.tangent = mul(tangent, matNormal);
+    
+    binormal.w = 0;
+    outData.binormal = mul(binormal, matNormal);
+    
+    outData.uv = uv.xy;
+    outData.eyev = outData.wpos - eyePosition;
+    
+    return outData;
+}
+
+//───────────────────────────────────────
+// ピクセルシェーダ
+//───────────────────────────────────────
+float4 PS(VS_OUT inData) : SV_Target
+{
+    // ========== 法線の取得（ノーマルマップの有無で分岐）==========
+    float3 N;
+    
+    if (hasNormalMap)
+    {
+        // ★ノーマルマップからサンプリング
+        float3 normalMapSample = g_normalMap.Sample(g_sampler, inData.uv).xyz;
+        
+        // [0, 1] → [-1, 1] に変換
+        normalMapSample = normalMapSample * 2.0 - 1.0;
+        
+        // ★Tangent Space から World Space への変換
+        // TBN 行列を構築
+        float3 T = normalize(inData.tangent.xyz);
+        float3 B = normalize(inData.binormal.xyz);
+        float3 Nbase = normalize(inData.normal.xyz);
+        float3x3 TBN = float3x3(T, B, Nbase);
+        
+        // ノーマルマップの法線をワールド空間に変換
+        N = normalize(mul(normalMapSample, TBN));
+    }
+    else
+    {
+        // ノーマルマップがない場合は通常の法線を使用
+        N = normalize(inData.normal.xyz);
+    }
+    
+    // ========== 以下、既存のライティング計算 ==========
+    float4 diffuse;
+    float4 ambientColor = ambient;
+    float4 ambentFactor = { 0.1, 0.1, 0.1, 1.0 };
+    
+    // ライトベクトル計算
+    float3 lightVec = lightPosition.xyz - inData.wpos.xyz;
+    float len = length(lightVec);
+    float3 L = lightVec / len;
+    
+    // 距離減衰
+    float3 k = { 0.2f, 0.2f, 1.0f };
+    float dTerm = 1.0 / (k.x + k.y * len + k.z * len * len);
+    
+    // ディフューズ
+    float ndotl = saturate(dot(N, L)); // ★ここで計算した N を使用
+    diffuse = diffuseColor * diffusefactor * ndotl * dTerm;
+    
+    // スペキュラ
+    float spec = 0.0;
+    if (ndotl > 0.0)
+    {
+        float3 R = reflect(-L, N); // ★ここでも N を使用
+        float3 V = normalize(-inData.eyev.xyz);
+        spec = pow(saturate(dot(R, V)), 32.0);
+    }
+    float4 specularCol = specular * spec * dTerm;
+    
+    // テクスチャとの合成
+    float4 diffuseTerm;
+    float4 ambientTerm;
+    
+    if (useTexture == 1)
+    {
+        float4 texColor = g_texture.Sample(g_sampler, inData.uv);
+        diffuseTerm = diffuse * texColor;
+        ambientTerm = ambentFactor * texColor;
+    }
+    else
+    {
+        diffuseTerm = diffuse;
+        ambientTerm = ambentFactor * diffuseColor;
+    }
+    
+    float4 color = diffuseTerm + specularCol + ambientTerm;
+    return color;
+}
+----------------------------------------
+
+重要ポイント:
+1. hasNormalMap で条件分岐
+2. ノーマルマップの値を [0,1] から [-1,1] に変換
+3. TBN 行列で Tangent Space → World Space に変換
+4. ノーマルマップがない場合は通常の法線を使用
+
+
+================================================================================
+動作確認とデバッグ
+================================================================================
+
+【確認1: 法線の可視化】
+ピクセルシェーダーに以下を追加してデバッグ:
+
+----------------------------------------
+// PS関数の最初に追加
+float3 NC = normalize(inData.normal.xyz);
+return float4(NC * 0.5 + 0.5, 1); // 法線を色として可視化
+----------------------------------------
+
+正常なら:
+- 上向き = 緑っぽい
+- 横向き = 赤/青っぽい
+
+
+【確認2: ノーマルマップの適用確認】
+ノーマルマップあり/なしで見た目が変わることを確認:
+
+----------------------------------------
+// InitMaterial() で強制的に有効/無効を切り替え
+pMaterialList_[i].pNormalMap = nullptr; // 無効化してテスト
+----------------------------------------
+
+
+【確認3: Tangent/Binormal の可視化】
+----------------------------------------
+// Tangent を可視化
+float3 T = normalize(inData.tangent.xyz);
+return float4(T * 0.5 + 0.5, 1);
+
+// Binormal を可視化
+float3 B = normalize(inData.binormal.xyz);
+return float4(B * 0.5 + 0.5, 1);
+----------------------------------------
+
+
+================================================================================
+よくあるトラブルと解決方法
+================================================================================
+
+【問題1: モデルが真っ黒になる】
+原因: ノーマルマップがない時に null をセットしていない
+解決: Draw() で必ず以下を実行:
+----------------------------------------
+ID3D11ShaderResourceView* pNull = nullptr;
+Direct3D::pContext->PSSetShaderResources(1, 1, &pNull);
+----------------------------------------
+
+【問題2: 法線が反転している】
+原因: ノーマルマップの形式が OpenGL 用（Y軸反転）
+解決: ノーマルマップ読み込み時に Y 軸を反転するか、
+      DirectX 用のノーマルマップを使用
+
+【問題3: Tangent/Binormal が FBX にない】
+原因: FBX エクスポート時に tangent/binormal が含まれていない
+解決: CalculateTangentsAndBinormals() が正しく呼ばれているか確認
+
+【問題4: 頂点バッファサイズエラー】
+原因: VERTEX 構造体のサイズが変わったのに、
+      他のコードで古いサイズを使用している
+解決: sizeof(VERTEX) を正しく使用しているか確認
+
+【問題5: ライティングがおかしい】
+原因: TBN 行列の構築方法が間違っている
+解決: 
+----------------------------------------
+// 正しい順序で行列を構築
+float3x3 TBN = float3x3(T, B, N);  // 列ベクトルとして配置
+// または
+float3x3 TBN = transpose(float3x3(T, B, N)); // 行ベクトルの場合
+----------------------------------------
+
+
+================================================================================
+授業での進め方の提案
+================================================================================
+
+【1回目】ステップ1?2
+- 頂点構造体の拡張
+- FBX からの読み込み
+- まだ描画には使わない（仮の値を設定）
+
+【2回目】ステップ3?4
+- Tangent/Binormal の計算
+- 入力レイアウトの更新
+- ビルドエラーがないことを確認
+
+【3回目】ステップ5
+- シェーダーの修正
+- まだノーマルマップは使わず、通常の法線のみで描画
+- 既存の描画が崩れていないことを確認
+
+【4回目】ステップ6?7
+- マテリアル構造体の拡張
+- ノーマルマップの読み込み
+- まだ描画には反映しない
+
+【5回目】ステップ8
+- 描画処理の修正
+- ピクセルシェーダーでノーマルマップを適用
+- 最終的な動作確認
+
+
+================================================================================
+まとめ
+================================================================================
+
+この実装により、以下が実現されます:
+
+? FBX SDK を使って tangent と binormal を読み取る
+? FBX にデータがない場合は自動計算
+? 指定したノーマルマップ画像を読み込んで適用
+? ノーマルマップがあるモデルとないモデルの両方に対応
+? 既存のコードに影響を与えない段階的な実装
+
+各ステップは独立しているため、授業で1つずつ進めることができます。
+各ステップ終了時に必ず動作確認を行い、問題がないことを確認してから
+次のステップに進んでください。
+
+================================================================================
