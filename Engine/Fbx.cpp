@@ -230,6 +230,17 @@ void Fbx::InitVertex(FbxMesh* mesh)
 		}
 	}
 
+	for (int i = 0; i < polygonCount_; i++)
+	{
+		int startIndex = mesh->GetPolygonVertexIndex(i);
+		FbxVector4 tanget = mesh->GetElementTangent(0)->GetDirectArray().GetAt(startIndex);
+		for (int j = 0; j < 3; j++)
+		{
+			int index = mesh->GetPolygonVertices()[startIndex + j];
+			pVertices_[index].tangent = XMVectorSet((float)tanget[0], (float)tanget[1], (float)tanget[2], 0.0f);
+		}
+	}
+
 	// 頂点バッファ作成
 	HRESULT hr;
 	D3D11_BUFFER_DESC bd_vertex;

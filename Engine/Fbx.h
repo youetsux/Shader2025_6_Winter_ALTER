@@ -66,11 +66,14 @@ private:
 		XMFLOAT4	ambient; //環境光の色
 		BOOL		materialFlag; //マテリアルがあるかないか
 	};
+
 	struct VERTEX
 	{
 		XMVECTOR position;
 		XMVECTOR uv;
 		XMVECTOR normal;
+		XMVECTOR tangent;
+		XMVECTOR binormal;
 	};
 
 	//バッファの皆さん

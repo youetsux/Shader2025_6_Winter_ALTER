@@ -49,7 +49,95 @@ HRESULT Direct3D::InitShader()
     {
         return E_FAIL;
     }
+    if (FAILED(InitNormalShader()))
+    {
+        return E_FAIL;
+    }
 	return S_OK;
+}
+
+//NormalShader.hlsl用のシェーダーの初期化
+//プロトタイプまだ書いてねぇわ
+HRESULT Direct3D::InitNormalShader()
+{
+    HRESULT hr;
+
+
+    // 頂点シェーダの作成（コンパイル）
+    ID3DBlob* pCompileVS = nullptr;
+    D3DCompileFromFile(L"NormalShader.hlsl", nullptr, nullptr, "VS", "vs_5_0", NULL, 0, &pCompileVS, NULL);
+    assert(pCompileVS != nullptr);
+
+
+    hr = pDevice->CreateVertexShader(pCompileVS->GetBufferPointer(), 
+        pCompileVS->GetBufferSize(), NULL, &(shaderBundle[SHADER_NORMALMAP].pVertexShader));
+    
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr, L"頂点シェーダの作成の作成に失敗しました", L"エラー", MB_OK);
+        return hr;
+    }
+
+
+
+    // ピクセルシェーダの作成（コンパイル）
+    ID3DBlob* pCompilePS = nullptr;
+    D3DCompileFromFile(L"NormalShader.hlsl", nullptr, nullptr, "PS", "ps_5_0", NULL, 0, &pCompilePS, NULL);
+    assert(pCompilePS != nullptr);
+    hr = pDevice->CreatePixelShader(pCompilePS->GetBufferPointer(),
+        pCompilePS->GetBufferSize(), NULL, &(shaderBundle[SHADER_NORMALMAP].pPixelShader));
+
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr, L"ピクセルシェーダの作成の作成に失敗しました", L"エラー", MB_OK);
+        return hr;
+    }
+
+    UINT offset[5] = {0, sizeof(DirectX::XMVECTOR), sizeof(DirectX::XMVECTOR) * 2, sizeof(DirectX::XMVECTOR) * 3, sizeof(DirectX::XMVECTOR) * 4};
+    //オフセット計算:
+    //    -POSITION  :  0 bytes(4 floats = 16 bytes)
+    //    - TEXCOORD : 16 bytes(4 floats = 16 bytes)
+    //    - NORMAL   : 32 bytes(4 floats = 16 bytes)
+    //    - TANGENT  : 48 bytes(4 floats = 16 bytes) ← 追加
+    //    - BINORMAL : 64 bytes(4 floats = 16 bytes) ← 追加
+    //          合計 : 80 bytes
+
+    //頂点インプットレイアウト
+    D3D11_INPUT_ELEMENT_DESC layout[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  offset[0],  D3D11_INPUT_PER_VERTEX_DATA, 0 },	//位置
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0,  offset[1],  D3D11_INPUT_PER_VERTEX_DATA, 0 },//UV座標
+	    { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  offset[2],  D3D11_INPUT_PER_VERTEX_DATA, 0 }, //法線ベクトル
+	    { "TANGENT",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  offset[3],  D3D11_INPUT_PER_VERTEX_DATA, 0 }, //接線ベクトル
+        {"BINORMAL",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  offset[4],  D3D11_INPUT_PER_VERTEX_DATA, 0 } //従法線ベクトル
+    };
+
+    hr = pDevice->CreateInputLayout(layout, 3, pCompileVS->GetBufferPointer(),
+        pCompileVS->GetBufferSize(), &(shaderBundle[SHADER_NORMALMAP].pVertexLayout));
+
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr, L"頂点インプットレイアウトの作成の作成に失敗しました", L"エラー", MB_OK);
+        return hr;
+    }
+
+
+    pCompileVS->Release();
+    pCompilePS->Release();
+    //ラスタライザ作成
+    D3D11_RASTERIZER_DESC rdc = {};
+    rdc.CullMode = D3D11_CULL_BACK;
+    rdc.FillMode = D3D11_FILL_SOLID;
+    rdc.FrontCounterClockwise = FALSE;
+    pDevice->CreateRasterizerState(&rdc, &(shaderBundle[SHADER_NORMALMAP].pRasterizerState));
+
+    //それぞれをデバイスコンテキストにセット
+    //pContext->VSSetShader(pVertexShader, NULL, 0);	//頂点シェーダー
+    //pContext->PSSetShader(pPixelShader, NULL, 0);	//ピクセルシェーダー
+    //pContext->IASetInputLayout(pVertexLayout);	//頂点インプットレイアウト
+    //pContext->RSSetState(pRasterizerState);		//ラスタライザー
+
+
+    return S_OK;
 }
 
 HRESULT Direct3D::InitShader3D()
@@ -63,9 +151,9 @@ HRESULT Direct3D::InitShader3D()
     assert(pCompileVS != nullptr);
 
 
-    hr = pDevice->CreateVertexShader(pCompileVS->GetBufferPointer(), 
+    hr = pDevice->CreateVertexShader(pCompileVS->GetBufferPointer(),
         pCompileVS->GetBufferSize(), NULL, &(shaderBundle[SHADER_3D].pVertexShader));
-    
+
     if (FAILED(hr))
     {
         MessageBox(nullptr, L"頂点シェーダの作成の作成に失敗しました", L"エラー", MB_OK);
@@ -87,11 +175,18 @@ HRESULT Direct3D::InitShader3D()
         return hr;
     }
 
+    UINT offset[] = { 0, sizeof(DirectX::XMVECTOR), sizeof(DirectX::XMVECTOR) * 2};
+    //オフセット計算:
+    //    -POSITION  :  0 bytes(4 floats = 16 bytes)
+    //    - TEXCOORD : 16 bytes(4 floats = 16 bytes)
+    //    - NORMAL   : 32 bytes(4 floats = 16 bytes)
+    //          合計 : 48 bytes
+
     //頂点インプットレイアウト
     D3D11_INPUT_ELEMENT_DESC layout[] = {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },	//位置
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0,  sizeof(DirectX::XMVECTOR), D3D11_INPUT_PER_VERTEX_DATA, 0 },//UV座標
-	    { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(DirectX::XMVECTOR)+ sizeof(DirectX::XMVECTOR), D3D11_INPUT_PER_VERTEX_DATA, 0 } //法線ベクトル
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  offset[0],  D3D11_INPUT_PER_VERTEX_DATA, 0 },	//位置
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0,  offset[1],  D3D11_INPUT_PER_VERTEX_DATA, 0 },//UV座標
+        { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  offset[2],  D3D11_INPUT_PER_VERTEX_DATA, 0 }, //法線ベクトル
     };
 
     hr = pDevice->CreateInputLayout(layout, 3, pCompileVS->GetBufferPointer(),

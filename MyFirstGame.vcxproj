@@ -72,12 +72,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\FBXSDK\2020.3.4\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\lib\x64\debug;D:\FBXSDK\2020.3.4\lib\vs2022\x64\debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\FBXSDK\2020.3.4\include;$(IncludePath);C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\include</IncludePath>
+    <LibraryPath>C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\lib\x64\debug;D:\FBXSDK\2020.3.4\lib\vs2022\x64\debug;$(LibraryPath);C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\lib\x64\debug</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\lib\x64\release;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\include;$(IncludePath);C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\include</IncludePath>
+    <LibraryPath>C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\lib\x64\release;$(LibraryPath);C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\lib\x64\debug</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
