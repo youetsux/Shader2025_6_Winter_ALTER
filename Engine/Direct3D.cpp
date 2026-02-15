@@ -111,7 +111,8 @@ HRESULT Direct3D::InitNormalShader()
         {"BINORMAL",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  offset[4],  D3D11_INPUT_PER_VERTEX_DATA, 0 } //従法線ベクトル
     };
 
-    hr = pDevice->CreateInputLayout(layout, 3, pCompileVS->GetBufferPointer(),
+    //パラメータ数間違えてた
+    hr = pDevice->CreateInputLayout(layout, 5, pCompileVS->GetBufferPointer(),
         pCompileVS->GetBufferSize(), &(shaderBundle[SHADER_NORMALMAP].pVertexLayout));
 
     if (FAILED(hr))

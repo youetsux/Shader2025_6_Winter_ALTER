@@ -193,6 +193,7 @@
   <ItemGroup>
     <FxCompile Include="Simple3D.hlsl" />
     <FxCompile Include="Simple2D.hlsl" />
+    <FxCompile Include="NormalShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

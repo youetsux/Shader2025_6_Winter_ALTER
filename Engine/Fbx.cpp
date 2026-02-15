@@ -204,6 +204,9 @@ void Fbx::InitVertex(FbxMesh* mesh)
 
 	int vertexIndex = 0;  // 展開後の頂点インデックス
 
+	// Tangent の存在確認
+	FbxLayerElementTangent* tangentElement = mesh->GetElementTangent();
+
 	for (long poly = 0; poly < polygonCount_; poly++)
 	{
 		for (int vertex = 0; vertex < 3; vertex++)
@@ -226,20 +229,72 @@ void Fbx::InitVertex(FbxMesh* mesh)
 			mesh->GetPolygonVertexNormal(poly, vertex, normal);
 			pVertices_[vertexIndex].normal = XMVectorSet((float)normal[0], (float)normal[1], (float)normal[2], 0.0f);
 
+			//接線の取得（存在する場合）
+					  // ========== Tangent（接線）の取得 ==========
+			if (tangentElement != nullptr)
+			{
+				int tangentIndex = 0;
+
+				// MappingMode に応じてインデックスを決定
+				if (tangentElement->GetMappingMode() == FbxGeometryElement::eByPolygonVertex)
+				{
+					// ポリゴン頂点ごとにデータがある場合
+					if (tangentElement->GetReferenceMode() == FbxGeometryElement::eDirect)
+					{
+						tangentIndex = poly * 3 + vertex;
+					}
+					else if (tangentElement->GetReferenceMode() == FbxGeometryElement::eIndexToDirect)
+					{
+						tangentIndex = tangentElement->GetIndexArray().GetAt(poly * 3 + vertex);
+					}
+				}
+				else if (tangentElement->GetMappingMode() == FbxGeometryElement::eByControlPoint)
+				{
+					// コントロールポイントごとにデータがある場合
+					if (tangentElement->GetReferenceMode() == FbxGeometryElement::eDirect)
+					{
+						tangentIndex = controlPointIndex;
+					}
+					else if (tangentElement->GetReferenceMode() == FbxGeometryElement::eIndexToDirect)
+					{
+						tangentIndex = tangentElement->GetIndexArray().GetAt(controlPointIndex);
+					}
+				}
+
+				FbxVector4 tangent = tangentElement->GetDirectArray().GetAt(tangentIndex);
+				pVertices_[vertexIndex].tangent = XMVectorSet((float)tangent[0], (float)tangent[1], (float)tangent[2], 0.0f);
+			}
+			else
+			{
+				// Tangent が存在しない場合は仮の値（U方向）
+				pVertices_[vertexIndex].tangent = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+			}
+
+			//接線の取得ここまで
+
+
 			vertexIndex++;  // 次の頂点へ
 		}
 	}
 
-	for (int i = 0; i < polygonCount_; i++)
+	// ========== Binormal（従法線）を計算で生成 ==========
+	// すべての頂点に対して Binormal = Normal × Tangent を計算
+	for (int i = 0; i < vertexCount_; i++)
 	{
-		int startIndex = mesh->GetPolygonVertexIndex(i);
-		FbxVector4 tanget = mesh->GetElementTangent(0)->GetDirectArray().GetAt(startIndex);
-		for (int j = 0; j < 3; j++)
-		{
-			int index = mesh->GetPolygonVertices()[startIndex + j];
-			pVertices_[index].tangent = XMVectorSet((float)tanget[0], (float)tanget[1], (float)tanget[2], 0.0f);
-		}
+		XMVECTOR N = XMVector3Normalize(pVertices_[i].normal);
+		XMVECTOR T = XMVector3Normalize(pVertices_[i].tangent);
+		pVertices_[i].binormal = XMVector3Normalize(XMVector3Cross(N, T));
 	}
+	//for (int i = 0; i < polygonCount_; i++)
+	//{
+	//	int startIndex = mesh->GetPolygonVertexIndex(i);
+	//	FbxVector4 tanget = mesh->GetElementTangent(0)->GetDirectArray().GetAt(startIndex);
+	//	for (int j = 0; j < 3; j++)
+	//	{
+	//		int index = mesh->GetPolygonVertices()[startIndex + j];
+	//		pVertices_[index].tangent = XMVectorSet((float)tanget[0], (float)tanget[1], (float)tanget[2], 0.0f);
+	//	}
+	//}
 
 	// 頂点バッファ作成
 	HRESULT hr;
