@@ -139,8 +139,8 @@ void Stage::Draw()
     Model::Draw(hRoom_);
 
     static Transform tDonut;
-    tDonut.scale_ = { 0.25,0.25,0.25 };
-    tDonut.position_ = { 0, 0.5, 0 };
+    tDonut.scale_ = { 1,1,1 };
+    tDonut.position_ = { 0, 0.5, 1.0 };
     tDonut.rotate_.y += 0.1;
     Model::SetTransform(hDonut_, tDonut);
     Model::DrawNormalMapped(hDonut_);

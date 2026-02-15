@@ -572,7 +572,7 @@ void Fbx::InitMaterial(FbxNode* pNode)
         //    pMaterialList_[i].pNormalTexture = nullptr;
         //}
         
-		fs::path defaultNormalPath = "normal.png";
+		fs::path defaultNormalPath = "textureNormal.png";
 
 		if (fs::is_regular_file(defaultNormalPath))
 		{
