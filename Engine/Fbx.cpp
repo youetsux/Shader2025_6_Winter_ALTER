@@ -295,8 +295,8 @@ void Fbx::InitVertex(FbxMesh* mesh)
 				int tangentIndex = 0;
 
 				// MappingMode に応じてインデックスを決定
-				if (tangentElement->GetMappingMode() == FbxGeometryElement::eByPolygonVertex)
-				{
+				//if (tangentElement->GetMappingMode() == FbxGeometryElement::eByPolygonVertex)
+				//{
 					// ポリゴン頂点ごとにデータがある場合
 					if (tangentElement->GetReferenceMode() == FbxGeometryElement::eDirect)
 					{
@@ -306,19 +306,19 @@ void Fbx::InitVertex(FbxMesh* mesh)
 					{
 						tangentIndex = tangentElement->GetIndexArray().GetAt(poly * 3 + vertex);
 					}
-				}
-				else if (tangentElement->GetMappingMode() == FbxGeometryElement::eByControlPoint)
-				{
-					// コントロールポイントごとにデータがある場合
-					if (tangentElement->GetReferenceMode() == FbxGeometryElement::eDirect)
-					{
-						tangentIndex = controlPointIndex;
-					}
-					else if (tangentElement->GetReferenceMode() == FbxGeometryElement::eIndexToDirect)
-					{
-						tangentIndex = tangentElement->GetIndexArray().GetAt(controlPointIndex);
-					}
-				}
+				//}
+				//else if (tangentElement->GetMappingMode() == FbxGeometryElement::eByControlPoint)
+				//{
+				//	// コントロールポイントごとにデータがある場合
+				//	if (tangentElement->GetReferenceMode() == FbxGeometryElement::eDirect)
+				//	{
+				//		tangentIndex = controlPointIndex;
+				//	}
+				//	else if (tangentElement->GetReferenceMode() == FbxGeometryElement::eIndexToDirect)
+				//	{
+				//		tangentIndex = tangentElement->GetIndexArray().GetAt(controlPointIndex);
+				//	}
+				//}
 
 				FbxVector4 tangent = tangentElement->GetDirectArray().GetAt(tangentIndex);
 				pVertices_[vertexIndex].tangent = XMVectorSet((float)tangent[0], (float)tangent[1], (float)tangent[2], 0.0f);

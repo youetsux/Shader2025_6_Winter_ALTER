@@ -157,8 +157,11 @@ cbuffer global : register(b0)
 
 cbuffer gStage : register(b1)
 {
-    float4 lightPosition;
-    float4 eyePosition;
+    float4 lightPosition; // 点光源
+    float4 eyePosition; // カメラ
+    float4 spotLightPosition; // ← スポットライト位置
+    float4 spotLightDirection; // ← スポットライト方向
+    float4 spotLightParams; // ← x:内側角度cos, y:外側角度cos, z:減衰, w:未使用
 };
 
 //───────────────────────────────────────
@@ -208,67 +211,279 @@ VS_OUT VS(float4 pos : POSITION,
 //───────────────────────────────────────
 // ピクセルシェーダ
 //───────────────────────────────────────
+//float4 PS(VS_OUT inData) : SV_Target
+//{
+//    // ========== ノーマルマップから法線を取得 ==========
+//    float3 normalMapSample = g_normalMap.Sample(g_sampler, inData.uv).rgb;
+//    float3 normalTangentSpace = normalMapSample * 2.0 - 1.0;
+    
+//    // TBN 行列を構築
+//    float3 T = normalize(inData.tangent.xyz);
+//    float3 B = normalize(inData.binormal.xyz);
+//    float3 N = normalize(inData.normal.xyz);
+//    float3x3 TBN = float3x3(T, B, N);
+    
+//    // タンジェント空間からワールド空間に変換
+//    float3 worldNormal = normalize(mul(normalTangentSpace, TBN));
+//    // =================================================
+    
+//    // ========== 法線可視化モード（デバッグ用） ==========
+//    // コメントアウトを外すと法線が色として表示されます
+//    // 【使い方】
+//    // - 赤 (X軸)、緑 (Y軸)、青 (Z軸) で法線の向きを確認
+//    // - ノーマルマップの凹凸が色の変化として見える
+    
+//    // 元の法線を可視化（ノーマルマップ適用前）
+//    //return float4(N * 0.5 + 0.5, 1);
+    
+//    // ノーマルマップ適用後の法線を可視化（推奨）
+//    //return float4(worldNormal * 0.5 + 0.5, 1);
+    
+//    // Tangent を可視化
+//    //return float4(T * 0.5 + 0.5, 1);
+    
+//    // Binormal を可視化
+//    //return float4(B * 0.5 + 0.5, 1);
+    
+//    // ノーマルマップのテクスチャをそのまま表示
+//    //return float4(normalMapSample, 1);
+//    // ========== 法線可視化モード END ==========
+    
+//    // ========== 通常のライティング計算 ==========
+//    float4 ambentFactor = {0.1, 0.1, 0.1, 1.0};
+    
+//    float3 lightVec = lightPosition.xyz - inData.wpos.xyz;
+//    float len = length(lightVec);
+//    float3 L = lightVec / len;
+    
+//    float3 k = {0.2f, 0.2f, 1.0f};
+//    float dTerm = 1.0 / (k.x + k.y * len + k.z * len * len);
+    
+//     //ノーマルマップの法線を使用
+//    float ndotl = saturate(dot(worldNormal, L));
+//    float4 diffuse = diffuseColor * diffusefactor * ndotl * dTerm;
+    
+//    float spec = 0.0;
+//    if (ndotl > 0.0)
+//    {
+//        float3 R = reflect(-L, worldNormal);
+//        float3 V = normalize(-inData.eyev.xyz);
+//        spec = pow(saturate(dot(R, V)), 32.0);
+//    }
+//    float4 specularCol = specular * spec * dTerm;
+    
+//    float4 diffuseTerm;
+//    float4 ambientTerm;
+    
+//    if (useTexture == 1)
+//    {
+//        float4 texColor = g_texture.Sample(g_sampler, inData.uv);
+//        diffuseTerm = diffuse * texColor;
+//        ambientTerm = ambentFactor * texColor;
+//    }
+//    else
+//    {
+//        diffuseTerm = diffuse;
+//        ambientTerm = ambentFactor * diffuseColor;
+//    }
+    
+//    float4 color = diffuseTerm + specularCol + ambientTerm;
+//    return color;
+    
+//}
+
+
+//float4 PS(VS_OUT inData) : SV_Target
+//{
+//    // ========== ノーマルマップから法線を取得 ==========
+//    float3 normalMapSample = g_normalMap.Sample(g_sampler, inData.uv).rgb;
+//    float3 normalTangentSpace = normalMapSample * 2.0 - 1.0;
+    
+//    float3 T = normalize(inData.tangent.xyz);
+//    float3 B = normalize(inData.binormal.xyz);
+//    float3 N = normalize(inData.normal.xyz);
+//    float3x3 TBN = float3x3(T, B, N);
+    
+//    float3 worldNormal = normalize(mul(normalTangentSpace, TBN));
+//    // =================================================
+    
+//    // ========== 点光源のライティング（既存） ==========
+//    float4 ambentFactor = { 0.1, 0.1, 0.1, 1.0 };
+    
+//    float3 lightVec = lightPosition.xyz - inData.wpos.xyz;
+//    float len = length(lightVec);
+//    float3 L = lightVec / len;
+    
+//    float3 k = { 0.2f, 0.2f, 1.0f };
+//    float dTerm = 1.0 / (k.x + k.y * len + k.z * len * len);
+    
+//    float ndotl = saturate(dot(worldNormal, L));
+//    float4 diffuse = diffuseColor * diffusefactor * ndotl * dTerm;
+    
+//    float spec = 0.0;
+//    if (ndotl > 0.0)
+//    {
+//        float3 R = reflect(-L, worldNormal);
+//        float3 V = normalize(-inData.eyev.xyz);
+//        spec = pow(saturate(dot(R, V)), 32.0);
+//    }
+//    float4 specularCol = specular * spec * dTerm;
+//    // =================================================
+    
+//    // ========== スポットライトの計算（新規） ==========
+//    // スポットライトへのベクトル
+//    float3 spotLightVec = spotLightPosition.xyz - inData.wpos.xyz;
+//    float spotLen = length(spotLightVec);
+//    float3 spotL = spotLightVec / spotLen;
+    
+//    // スポットライトの方向ベクトル（正規化）
+//    float3 spotDir = normalize(spotLightDirection.xyz);
+    
+//    // 頂点からライトへの方向と、ライトの照射方向の角度
+//    float theta = dot(-spotL, spotDir);
+    
+//    // スポットライトの減衰計算
+//    float spotAttenuation = 0.0;
+//    float innerCos = spotLightParams.x;
+//    float outerCos = spotLightParams.y;
+    
+//    if (theta > outerCos)
+//    {
+//        // スポットライトの範囲内
+//        if (theta > innerCos)
+//        {
+//            // 内側（完全に明るい）
+//            spotAttenuation = 1.0;
+//        }
+//        else
+//        {
+//            // 境界（減衰）
+//            spotAttenuation = smoothstep(outerCos, innerCos, theta);
+//        }
+        
+//        // 距離による減衰
+//        float spotDTerm = 1.0 / (k.x + k.y * spotLen + k.z * spotLen * spotLen);
+        
+//        // スポットライトのディフューズ
+//        float spotNdotl = saturate(dot(worldNormal, spotL));
+//        float4 spotDiffuse = diffuseColor * diffusefactor * spotNdotl * spotDTerm * spotAttenuation;
+        
+//        // スポットライトのスペキュラ
+//        float spotSpec = 0.0;
+//        if (spotNdotl > 0.0)
+//        {
+//            float3 spotR = reflect(-spotL, worldNormal);
+//            float3 V = normalize(-inData.eyev.xyz);
+//            spotSpec = pow(saturate(dot(spotR, V)), 32.0);
+//        }
+//        float4 spotSpecularCol = specular * spotSpec * spotDTerm * spotAttenuation;
+        
+//        // スポットライトを加算
+//        diffuse += spotDiffuse;
+//        specularCol += spotSpecularCol;
+//    }
+//    // =================================================
+    
+//    // テクスチャとの合成
+//    float4 diffuseTerm;
+//    float4 ambientTerm;
+    
+//    if (useTexture == 1)
+//    {
+//        float4 texColor = g_texture.Sample(g_sampler, inData.uv);
+//        diffuseTerm = diffuse * texColor;
+//        ambientTerm = ambentFactor * texColor;
+//    }
+//    else
+//    {
+//        diffuseTerm = diffuse;
+//        ambientTerm = ambentFactor * diffuseColor;
+//    }
+    
+//    float4 color = diffuseTerm + specularCol + ambientTerm;
+//    return color;
+//}
+
 float4 PS(VS_OUT inData) : SV_Target
 {
     // ========== ノーマルマップから法線を取得 ==========
     float3 normalMapSample = g_normalMap.Sample(g_sampler, inData.uv).rgb;
     float3 normalTangentSpace = normalMapSample * 2.0 - 1.0;
     
-    // TBN 行列を構築
     float3 T = normalize(inData.tangent.xyz);
     float3 B = normalize(inData.binormal.xyz);
     float3 N = normalize(inData.normal.xyz);
     float3x3 TBN = float3x3(T, B, N);
     
-    // タンジェント空間からワールド空間に変換
     float3 worldNormal = normalize(mul(normalTangentSpace, TBN));
     // =================================================
     
-    // ========== 法線可視化モード（デバッグ用） ==========
-    // コメントアウトを外すと法線が色として表示されます
-    // 【使い方】
-    // - 赤 (X軸)、緑 (Y軸)、青 (Z軸) で法線の向きを確認
-    // - ノーマルマップの凹凸が色の変化として見える
+    float4 ambentFactor = { 0.1, 0.1, 0.1, 1.0 };
+    float3 k = { 0.2f, 0.2f, 1.0f };
     
-    // 元の法線を可視化（ノーマルマップ適用前）
-    //return float4(N * 0.5 + 0.5, 1);
+    // ライティング結果を蓄積する変数
+    float4 diffuse = float4(0, 0, 0, 0);
+    float4 specularCol = float4(0, 0, 0, 0);
     
-    // ノーマルマップ適用後の法線を可視化（推奨）
-    //return float4(worldNormal * 0.5 + 0.5, 1);
+    // ========== 点光源のライティング ==========
+    //float3 lightVec = lightPosition.xyz - inData.wpos.xyz;
+    //float len = length(lightVec);
+    //float3 L = normalize(lightVec);
     
-    // Tangent を可視化
-    //return float4(T * 0.5 + 0.5, 1);
+    //float dTerm = 1.0 / (k.x + k.y * len + k.z * len * len);
     
-    // Binormal を可視化
-    //return float4(B * 0.5 + 0.5, 1);
+    //float ndotl = saturate(dot(worldNormal, L));
+    //diffuse += diffuseColor * diffusefactor * ndotl * dTerm;
     
-    // ノーマルマップのテクスチャをそのまま表示
-    //return float4(normalMapSample, 1);
-    // ========== 法線可視化モード END ==========
+    //if (ndotl > 0.0)
+    //{
+    //    float3 R = reflect(-L, worldNormal);
+    //    float3 V = normalize(-inData.eyev.xyz);
+    //    float spec = pow(saturate(dot(R, V)), 32.0);
+    //    specularCol += specular * spec * dTerm;
+    //}
+    // ===========================================
     
-    // ========== 通常のライティング計算 ==========
-    float4 ambentFactor = {0.1, 0.1, 0.1, 1.0};
+    // ========== スポットライトの計算 ==========
+    float3 spotLightVec = spotLightPosition.xyz - inData.wpos.xyz;
+    float spotLen = length(spotLightVec);
+    float3 spotL = normalize(spotLightVec);
     
-    float3 lightVec = lightPosition.xyz - inData.wpos.xyz;
-    float len = length(lightVec);
-    float3 L = lightVec / len;
+    float3 spotDir = normalize(spotLightDirection.xyz);
+    float theta = dot(-spotL, spotDir);
     
-    float3 k = {0.2f, 0.2f, 1.0f};
-    float dTerm = 1.0 / (k.x + k.y * len + k.z * len * len);
+    float innerCos = spotLightParams.x;
+    float outerCos = spotLightParams.y;
     
-     //ノーマルマップの法線を使用
-    float ndotl = saturate(dot(worldNormal, L));
-    float4 diffuse = diffuseColor * diffusefactor * ndotl * dTerm;
-    
-    float spec = 0.0;
-    if (ndotl > 0.0)
+    if (theta > outerCos)
     {
-        float3 R = reflect(-L, worldNormal);
-        float3 V = normalize(-inData.eyev.xyz);
-        spec = pow(saturate(dot(R, V)), 32.0);
+        float spotAttenuation;
+        
+        if (theta > innerCos)
+        {
+            spotAttenuation = 1.0;
+        }
+        else
+        {
+            spotAttenuation = smoothstep(outerCos, innerCos, theta);
+        }
+        
+        //float spotDTerm = 1.0 / (k.x + k.y * spotLen + k.z * spotLen * spotLen);
+        float spotDTerm = 1.0; // 距離減衰なし（デバッグ用）
+        float spotNdotl = saturate(dot(worldNormal, spotL));
+        diffuse += diffuseColor * diffusefactor * spotNdotl * spotDTerm * spotAttenuation;
+        
+        if (spotNdotl > 0.0)
+        {
+            float3 spotR = reflect(-spotL, worldNormal);
+            float3 V = normalize(-inData.eyev.xyz);
+            float spotSpec = pow(saturate(dot(spotR, V)), 32.0);
+            specularCol += specular * spotSpec * spotDTerm * spotAttenuation;
+        }
     }
-    float4 specularCol = specular * spec * dTerm;
+    // ==========================================
     
+    // テクスチャとの合成
     float4 diffuseTerm;
     float4 ambientTerm;
     
@@ -286,5 +501,4 @@ float4 PS(VS_OUT inData) : SV_Target
     
     float4 color = diffuseTerm + specularCol + ambientTerm;
     return color;
-    
 }
