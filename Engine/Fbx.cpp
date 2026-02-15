@@ -458,89 +458,94 @@ void Fbx::InitConstantBuffer()
 
 void Fbx::InitMaterial(FbxNode* pNode)
 {
-	//materialCount_の数だけ配列を準備
-	pMaterialList_.resize(materialCount_);
-	for (int i = 0; i < materialCount_; i++)
-	{
-		//i番目のマテリアル情報を取得
-		FbxSurfaceMaterial* pMaterial = pNode->GetMaterial(i);
-		//テクスチャ情報
-		FbxProperty  lProperty = pMaterial->FindProperty(FbxSurfaceMaterial::sDiffuse);
-		//テクスチャの数数
-		int fileTextureCount = lProperty.GetSrcObjectCount<FbxFileTexture>();
+    pMaterialList_.resize(materialCount_);
+    for (int i = 0; i < materialCount_; i++)
+    {
+        FbxSurfaceMaterial* pMaterial = pNode->GetMaterial(i);
+        
+        // ========== Diffuse テクスチャの読み込み（既存） ==========
+        FbxProperty diffuseProperty = pMaterial->FindProperty(FbxSurfaceMaterial::sDiffuse);
+        int diffuseTextureCount = diffuseProperty.GetSrcObjectCount<FbxFileTexture>();
+        
+        if (diffuseTextureCount > 0)
+        {
+            FbxFileTexture* textureInfo = diffuseProperty.GetSrcObject<FbxFileTexture>(0);
+            const char* textureFilePath = textureInfo->GetRelativeFileName();
+            fs::path tPath(textureFilePath);
+            
+            if (fs::is_regular_file(tPath))
+            {
+                pMaterialList_[i].pTexture = new Texture;
+                pMaterialList_[i].pTexture->Load(tPath.string());
+            }
+            else
+            {
+                pMaterialList_[i].pTexture = nullptr;
+            }
+        }
+        else
+        {
+            pMaterialList_[i].pTexture = nullptr;
+        }
+        
+        // ========== Normal Map（法線マップ）の読み込み ==========
+        //FbxProperty normalMapProperty = pMaterial->FindProperty(FbxSurfaceMaterial::sNormalMap);
+        //int normalMapTextureCount = normalMapProperty.GetSrcObjectCount<FbxFileTexture>();
+        //
+        //if (normalMapTextureCount > 0)
+        //{
+        //    FbxFileTexture* normalMapInfo = normalMapProperty.GetSrcObject<FbxFileTexture>(0);
+        //    const char* normalMapFilePath = normalMapInfo->GetRelativeFileName();
+        //    fs::path nPath(normalMapFilePath);
+        //    
+        //    if (fs::is_regular_file(nPath))
+        //    {
+        //        pMaterialList_[i].pNormalTexture = new Texture;
+        //        pMaterialList_[i].pNormalTexture->Load(nPath.string());
+        //    }
+        //    else
+        //    {
+        //        pMaterialList_[i].pNormalTexture = nullptr;
+        //    }
+        //}
+        //else
+        //{
+        //    pMaterialList_[i].pNormalTexture = nullptr;
+        //}
+        
+		fs::path defaultNormalPath = "normal.png";
 
-		//テクスチャあり
-		if (fileTextureCount > 0)
+		if (fs::is_regular_file(defaultNormalPath))
 		{
-			FbxFileTexture* textureInfo = lProperty.GetSrcObject<FbxFileTexture>(0);
-			const char* textureFilePath = textureInfo->GetRelativeFileName();
-
-			fs::path tPath(textureFilePath);
-			if (fs::is_regular_file(tPath))
-			{
-				//ここでテクスチャの読み込み
-				pMaterialList_[i].pTexture = new Texture;
-				pMaterialList_[i].pTexture->Load(tPath.string());
-			}
-			else
-			{
-				pMaterialList_[i].pTexture = nullptr;
-				//テクスチャファイルが無いときの処理(エラー）
-				
-			}
-			FbxSurfacePhong* pMaterial = (FbxSurfacePhong*)pNode->GetMaterial(i);
-			FbxDouble  diffuse = pMaterial->DiffuseFactor;
-			FbxDouble3 diffuseColor = pMaterial->Diffuse;
-			FbxDouble3  ambient = pMaterial->Ambient;
-			pMaterialList_[i].diffuse = XMFLOAT4((float)diffuseColor[0], (float)diffuseColor[1], (float)diffuseColor[2], 1.0f);
-			pMaterialList_[i].factor = XMFLOAT4((float)diffuse, (float)diffuse, (float)diffuse, (float)diffuse);
-			pMaterialList_[i].ambient = { (float)ambient[0], (float)ambient[1], (float)ambient[2], 1.0f };
-			//あなたはフォンのパラメータを持ってますか？
-			if (pMaterial->GetClassId().Is(FbxSurfacePhong::ClassId))
-			{
-				FbxDouble3 specular = pMaterial->Specular;
-				FbxDouble shininess = pMaterial->Shininess; //4つとも同じ値でセット
-				//ここで、自分のpMaterialList_[i]に値を設定
-				pMaterialList_[i].specular = { (float)specular[0],(float)specular[1], (float)specular[2], 1.0f };
-				pMaterialList_[i].shininess = shininess;
-			}
-
+			pMaterialList_[i].pNormalTexture = new Texture;
+			pMaterialList_[i].pNormalTexture->Load(defaultNormalPath.string());
 		}
-		//テクスチャ無し
 		else
 		{
-			pMaterialList_[i].pTexture = nullptr;
-
-			//マテリアルの色
-			FbxSurfaceLambert* pMaterial = (FbxSurfaceLambert*)pNode->GetMaterial(i);
-			FbxDouble3  diffuse = pMaterial->Diffuse;
-			pMaterialList_[i].diffuse = XMFLOAT4((float)diffuse[0], (float)diffuse[1], (float)diffuse[2], 1.0f);
-			FbxSurfacePhong* pPhong = (FbxSurfacePhong*)pNode->GetMaterial(i);
-			FbxDouble factor = pPhong->DiffuseFactor; //拡散反射強度
-			pMaterialList_[i].factor = XMFLOAT4((float)factor, (float)factor, (float)factor, (float)factor);
-
-			FbxDouble3 ambient = pPhong->Ambient; //環境反射率
-			pMaterialList_[i].ambient = XMFLOAT4((float)ambient[0], (float)ambient[1], (float)ambient[2], 1.0f);
-		
-			if (pPhong->GetClassId().Is(FbxSurfacePhong::ClassId))
-			{
-				FbxDouble specular = pPhong->SpecularFactor; //鏡面反射率
-				FbxDouble shininess = pPhong->Shininess;    //光沢度
-				pMaterialList_[i].specular = { (float)specular,(float)specular, (float)specular, 1.0f };
-				pMaterialList_[i].shininess = shininess;
-			}
-			else
-			{ //フォンのパラメータを持っていないときのデフォルト値
-				pMaterialList_[i].specular = { 0.0f,0.0f,0.0f,1.0f };
-				pMaterialList_[i].shininess = 10.0f;
-			}
+			pMaterialList_[i].pNormalTexture = nullptr;
 		}
 
-		//ここで、自分のマテリアル構造体に色々詰め込む
-
-
-	}
-
+        // マテリアルパラメータの設定（既存のコード）
+        FbxSurfacePhong* pPhong = (FbxSurfacePhong*)pNode->GetMaterial(i);
+        if (pPhong)
+        {
+            FbxDouble diffuse = pPhong->DiffuseFactor;
+            FbxDouble3 diffuseColor = pPhong->Diffuse;
+            FbxDouble3 ambient = pPhong->Ambient;
+            
+            pMaterialList_[i].diffuse = XMFLOAT4((float)diffuseColor[0], (float)diffuseColor[1], (float)diffuseColor[2], 1.0f);
+            pMaterialList_[i].factor = XMFLOAT4((float)diffuse, (float)diffuse, (float)diffuse, (float)diffuse);
+            pMaterialList_[i].ambient = {(float)ambient[0], (float)ambient[1], (float)ambient[2], 1.0f};
+            
+            if (pPhong->GetClassId().Is(FbxSurfacePhong::ClassId))
+            {
+                FbxDouble3 specular = pPhong->Specular;
+                FbxDouble shininess = pPhong->Shininess;
+                pMaterialList_[i].specular = {(float)specular[0], (float)specular[1], (float)specular[2], 1.0f};
+                pMaterialList_[i].shininess = shininess;
+            }
+        }
+    }
 }
 
 void Fbx::RayCast(RayCastData& rayData)

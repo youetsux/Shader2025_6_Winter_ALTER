@@ -44,9 +44,11 @@ public:
 	void InitMaterial(FbxNode* pNode);
 	void RayCast(RayCastData& rayData);
 private:
+	//マテリアルの皆さん　ノーマルテクスチャ読み込みに対応
 	struct MATERIAL
 	{
 		Texture* pTexture;
+		Texture* pNormalTexture;
 		XMFLOAT4 diffuse;
 		XMFLOAT4 ambient;
 		XMFLOAT4 specular;
