@@ -43,6 +43,12 @@ void Model::Draw(int hModel)
 	                 ->Draw(modelList[hModel]->transform_);
 }
 
+// ========== ノーマルマップ描画（新規） ==========
+void Model::DrawNormalMapped(int hModel)
+{
+	modelList[hModel]->pfbx_->DrawNormalMapped(modelList[hModel]->transform_);
+}
+
 void Model::Release()
 {
 	bool isReffered = false;//参照されているか

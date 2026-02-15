@@ -192,6 +192,65 @@ void Fbx::Draw(Transform& transform)
 	}
 }
 
+// ========== ノーマルマップ描画（新規） ==========
+void Fbx::DrawNormalMapped(Transform& transform)
+{
+	Direct3D::SetShader(SHADER_NORMALMAP);  // ノーマルマップ用シェーダー
+	transform.Calculation();
+
+	UINT stride = sizeof(VERTEX);
+	UINT offset = 0;
+	Direct3D::pContext->IASetVertexBuffers(0, 1, &pVertexBuffer_, &stride, &offset);
+
+	for (int i = 0; i < materialCount_; i++)
+	{
+		CONSTANT_BUFFER cb;
+		cb.matWVP = transform.GetWorldMatrix() * Camera::GetViewMatrix() * Camera::GetProjectionMatrix();
+		cb.matWorld = transform.GetWorldMatrix();
+		cb.matNormal = transform.GetNormalMatrix();
+
+		cb.ambient = pMaterialList_[i].ambient;
+		cb.specular = pMaterialList_[i].specular;
+		cb.shininess = { pMaterialList_[i].shininess, pMaterialList_[i].shininess,
+						pMaterialList_[i].shininess, pMaterialList_[i].shininess };
+		cb.diffuse = pMaterialList_[i].diffuse;
+		cb.diffuseFactor = pMaterialList_[i].factor;
+		cb.materialFlag = pMaterialList_[i].pTexture != nullptr;
+
+		D3D11_MAPPED_SUBRESOURCE pdata;
+		Direct3D::pContext->Map(pConstantBuffer_, 0, D3D11_MAP_WRITE_DISCARD, 0, &pdata);
+		memcpy_s(pdata.pData, pdata.RowPitch, (void*)(&cb), sizeof(cb));
+		Direct3D::pContext->Unmap(pConstantBuffer_, 0);
+
+		stride = sizeof(int);
+		offset = 0;
+		Direct3D::pContext->IASetIndexBuffer(pIndexBuffer_[i], DXGI_FORMAT_R32_UINT, 0);
+
+		Direct3D::pContext->VSSetConstantBuffers(0, 1, &pConstantBuffer_);
+		Direct3D::pContext->PSSetConstantBuffers(0, 1, &pConstantBuffer_);
+
+		// ========== Diffuse テクスチャのセット ==========
+		if (pMaterialList_[i].pTexture)
+		{
+			ID3D11SamplerState* pSampler = pMaterialList_[i].pTexture->GetSampler();
+			Direct3D::pContext->PSSetSamplers(0, 1, &pSampler);
+
+			ID3D11ShaderResourceView* pSRV = pMaterialList_[i].pTexture->GetSRV();
+			Direct3D::pContext->PSSetShaderResources(0, 1, &pSRV);
+		}
+
+		// ========== ノーマルマップのセット（ここが追加部分） ==========
+		if (pMaterialList_[i].pNormalTexture)
+		{
+			ID3D11ShaderResourceView* pNormalSRV = pMaterialList_[i].pNormalTexture->GetSRV();
+			Direct3D::pContext->PSSetShaderResources(1, 1, &pNormalSRV);  // スロット1にセット
+		}
+		// =============================================================
+
+		Direct3D::pContext->DrawIndexed(indexCount_[i], 0, 0);
+	}
+}
+
 void Fbx::Release()
 {
 }

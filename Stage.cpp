@@ -143,7 +143,7 @@ void Stage::Draw()
     tDonut.position_ = { 0, 0.5, 0 };
     tDonut.rotate_.y += 0.1;
     Model::SetTransform(hDonut_, tDonut);
-    Model::Draw(hDonut_);
+    Model::DrawNormalMapped(hDonut_);
 
 	ImGui::Text("Stage Class rot:%lf", tDonut.rotate_.z);
 }

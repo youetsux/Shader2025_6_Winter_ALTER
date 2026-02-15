@@ -36,6 +36,7 @@ public:
 	Fbx();
 	HRESULT Load(std::string fileName);
 	void    Draw(Transform& transform);
+	void	DrawNormalMapped(Transform& transform);  // ← ノーマルマップ描画を追加
 	void    Release();
 
 	void InitVertex(FbxMesh* mesh);
