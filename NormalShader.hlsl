@@ -426,61 +426,61 @@ float4 PS(VS_OUT inData) : SV_Target
     float4 specularCol = float4(0, 0, 0, 0);
     
     // ========== 点光源のライティング ==========
-    //float3 lightVec = lightPosition.xyz - inData.wpos.xyz;
-    //float len = length(lightVec);
-    //float3 L = normalize(lightVec);
+    float3 lightVec = lightPosition.xyz - inData.wpos.xyz;
+    float len = length(lightVec);
+    float3 L = normalize(lightVec);
     
-    //float dTerm = 1.0 / (k.x + k.y * len + k.z * len * len);
+    float dTerm = 1.0 / (k.x + k.y * len + k.z * len * len);
     
-    //float ndotl = saturate(dot(worldNormal, L));
-    //diffuse += diffuseColor * diffusefactor * ndotl * dTerm;
+    float ndotl = saturate(dot(worldNormal, L));
+    diffuse += diffuseColor * diffusefactor * ndotl * dTerm;
     
-    //if (ndotl > 0.0)
-    //{
-    //    float3 R = reflect(-L, worldNormal);
-    //    float3 V = normalize(-inData.eyev.xyz);
-    //    float spec = pow(saturate(dot(R, V)), 32.0);
-    //    specularCol += specular * spec * dTerm;
-    //}
+    if (ndotl > 0.0)
+    {
+        float3 R = reflect(-L, worldNormal);
+        float3 V = normalize(-inData.eyev.xyz);
+        float spec = pow(saturate(dot(R, V)), 32.0);
+        specularCol += specular * spec * dTerm;
+    }
     // ===========================================
     
     // ========== スポットライトの計算 ==========
-    float3 spotLightVec = spotLightPosition.xyz - inData.wpos.xyz;
-    float spotLen = length(spotLightVec);
-    float3 spotL = normalize(spotLightVec);
+    //float3 spotLightVec = spotLightPosition.xyz - inData.wpos.xyz;
+    //float spotLen = length(spotLightVec);
+    //float3 spotL = normalize(spotLightVec);
     
-    float3 spotDir = normalize(spotLightDirection.xyz);
-    float theta = dot(-spotL, spotDir);
+    //float3 spotDir = normalize(spotLightDirection.xyz);
+    //float theta = dot(-spotL, spotDir);
     
-    float innerCos = spotLightParams.x;
-    float outerCos = spotLightParams.y;
+    //float innerCos = spotLightParams.x;
+    //float outerCos = spotLightParams.y;
     
-    if (theta > outerCos)
-    {
-        float spotAttenuation;
+    //if (theta > outerCos)
+    //{
+    //    float spotAttenuation;
         
-        if (theta > innerCos)
-        {
-            spotAttenuation = 1.0;
-        }
-        else
-        {
-            spotAttenuation = smoothstep(outerCos, innerCos, theta);
-        }
+    //    if (theta > innerCos)
+    //    {
+    //        spotAttenuation = 1.0;
+    //    }
+    //    else
+    //    {
+    //        spotAttenuation = smoothstep(outerCos, innerCos, theta);
+    //    }
         
-        //float spotDTerm = 1.0 / (k.x + k.y * spotLen + k.z * spotLen * spotLen);
-        float spotDTerm = 1.0; // 距離減衰なし（デバッグ用）
-        float spotNdotl = saturate(dot(worldNormal, spotL));
-        diffuse += diffuseColor * diffusefactor * spotNdotl * spotDTerm * spotAttenuation;
+    //    //float spotDTerm = 1.0 / (k.x + k.y * spotLen + k.z * spotLen * spotLen);
+    //    float spotDTerm = 1.0; // 距離減衰なし（デバッグ用）
+    //    float spotNdotl = saturate(dot(worldNormal, spotL));
+    //    diffuse += diffuseColor * diffusefactor * spotNdotl * spotDTerm * spotAttenuation;
         
-        if (spotNdotl > 0.0)
-        {
-            float3 spotR = reflect(-spotL, worldNormal);
-            float3 V = normalize(-inData.eyev.xyz);
-            float spotSpec = pow(saturate(dot(spotR, V)), 32.0);
-            specularCol += specular * spotSpec * spotDTerm * spotAttenuation;
-        }
-    }
+    //    if (spotNdotl > 0.0)
+    //    {
+    //        float3 spotR = reflect(-spotL, worldNormal);
+    //        float3 V = normalize(-inData.eyev.xyz);
+    //        float spotSpec = pow(saturate(dot(spotR, V)), 32.0);
+    //        specularCol += specular * spotSpec * spotDTerm * spotAttenuation;
+    //    }
+    //}
     // ==========================================
     
     // テクスチャとの合成

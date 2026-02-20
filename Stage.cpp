@@ -156,14 +156,14 @@ void Stage::Draw()
     ltr.position_ = { Direct3D::GetLightPos().x, Direct3D::GetLightPos().y, Direct3D::GetLightPos().z };
     ltr.scale_ = { 0.1, 0.1, 0.1 };
     Model::SetTransform(hball_, ltr);
-    Model::DrawNormalMapped(hball_);
+    Model::Draw(hball_);
 
     Transform tr;
     tr.position_ = { 0, 0, 0 };
     tr.rotate_ = { 0, 180, 0 };
 
     Model::SetTransform(hRoom_, tr);
-    Model::DrawNormalMapped(hRoom_);
+    Model::Draw(hRoom_);
 
     static Transform tDonut;
     tDonut.scale_ = { 1, 1, 1 };
