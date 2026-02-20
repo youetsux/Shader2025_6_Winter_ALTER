@@ -18,6 +18,12 @@ namespace
     XMFLOAT4 spotLightDir = { 0.0f, -1.0f, 0.0f, 0.0f };     // 下向き
     float spotInnerAngle = XMConvertToRadians(15.0f);        // 内側の角度（明るい部分）
     float spotOuterAngle = XMConvertToRadians(30.0f);        // 外側の角度（減衰開始）
+    
+    // ========== オービットカメラのパラメータ ==========
+    XMFLOAT3 cameraTarget = { 0.0f, 0.8f, 0.0f };           // 注視点
+    float cameraDistance = 3.0f;                             // 注視点からの距離
+    float cameraYaw = 0.0f;                                  // 水平角度（Y軸回転）
+    float cameraPitch = 20.0f;                               // 垂直角度（上下）
 }
 // ===========================================================
 
@@ -28,14 +34,11 @@ Stage::Stage(GameObject* parent)
 	hRoom_ = -1;
 	hGround_ = -1;
 	hDonut_ = -1;
-
-	
 }
 
 Stage::~Stage()
 {
 }
-
 
 void Stage::InitConstantBuffer()
 {
@@ -59,6 +62,14 @@ void Stage::InitConstantBuffer()
 void Stage::Initialize()
 {
 	InitConstantBuffer();
+	
+	// Skyの初期化
+	HRESULT hr = sky_.Initialize();
+	if (FAILED(hr))
+	{
+		MessageBox(NULL, L"Skyの初期化に失敗しました", L"エラー", MB_OK);
+	}
+	
 	hball_ = Model::Load("ball.fbx");
 	assert(hball_ >= 0);
 	hRoom_ = Model::Load("room.fbx");
@@ -68,13 +79,31 @@ void Stage::Initialize()
 	hDonut_ = Model::Load("normalmapedbox.fbx");
 	assert(hDonut_ >= 0);
 	//pMelbourne_ = new Sprite(L"Assets\\melbourne.png");
-	Camera::SetPosition({ 0, 0.8, -2.8 });
-	Camera::SetTarget({ 0,0.8,0 });
+	
+	// オービットカメラの初期設定
+	cameraTarget = { 0.0f, 0.8f, 0.0f };
+	cameraDistance = 3.0f;
+	cameraYaw = 0.0f;
+	cameraPitch = 20.0f;
 }
 
 void Stage::Update()
 {
     transform_.rotate_.y += 0.5f;
+
+    // ========== オービットカメラの更新 ==========
+    // 球面座標からカメラ位置を計算
+    float yawRad = XMConvertToRadians(cameraYaw);
+    float pitchRad = XMConvertToRadians(cameraPitch);
+    
+    // 球面座標 → デカルト座標
+    float x = cameraTarget.x + cameraDistance * cosf(pitchRad) * sinf(yawRad);
+    float y = cameraTarget.y + cameraDistance * sinf(pitchRad);
+    float z = cameraTarget.z + cameraDistance * cosf(pitchRad) * cosf(yawRad);
+    
+    Camera::SetPosition(XMVectorSet(x, y, z, 0));
+    Camera::SetTarget(XMVectorSet(cameraTarget.x, cameraTarget.y, cameraTarget.z, 0));
+    // ===========================================
 
     // ========== 点光源の操作（既存） ==========
     if (Input::IsKey(DIK_A))
@@ -152,18 +181,30 @@ void Stage::Update()
 
 void Stage::Draw()
 {
+    // 最初に空を描画
+    sky_.Draw();
+    
     Transform ltr;
     ltr.position_ = { Direct3D::GetLightPos().x, Direct3D::GetLightPos().y, Direct3D::GetLightPos().z };
     ltr.scale_ = { 0.1, 0.1, 0.1 };
     Model::SetTransform(hball_, ltr);
     Model::Draw(hball_);
 
-    Transform tr;
-    tr.position_ = { 0, 0, 0 };
-    tr.rotate_ = { 0, 180, 0 };
+    //Transform tr;
+    //tr.position_ = { 0, 0, 0 };
+    //tr.rotate_ = { 0, 180, 0 };
 
-    Model::SetTransform(hRoom_, tr);
-    Model::Draw(hRoom_);
+    //Model::SetTransform(hRoom_, tr);
+    //Model::Draw(hRoom_);
+
+
+
+    Transform tr;
+	tr.position_ = { 0, 0, 0 };
+	tr.scale_ = { 5, 5, 5 };
+	Model::SetTransform(hGround_, tr);
+	Model::Draw(hGround_);
+
 
     static Transform tDonut;
     tDonut.scale_ = { 1, 1, 1 };
@@ -172,39 +213,55 @@ void Stage::Draw()
     Model::SetTransform(hDonut_, tDonut);
     Model::DrawNormalMapped(hDonut_);
 
-    // ========== ImGui でライト情報を表示 =========
-    ImGui::Text("Stage Class rot: %lf", tDonut.rotate_.z);
+    // ========== ImGui カメラコントロール ==========
+    ImGui::Begin("Camera Control");
+    
+    ImGui::Text("=== Orbit Camera ===");
+    ImGui::SliderFloat("Yaw (Horizontal)", &cameraYaw, -180.0f, 180.0f);
+    ImGui::SliderFloat("Pitch (Vertical)", &cameraPitch, -89.0f, 89.0f);
+    ImGui::SliderFloat("Distance", &cameraDistance, 0.5f, 10.0f);
     
     ImGui::Separator();
-    ImGui::Text("=== Light Information ===");
+    ImGui::DragFloat3("Target Position", &cameraTarget.x, 0.01f);
     
-    // 点光源の位置
-    XMFLOAT4 pointLight = Direct3D::GetLightPos();
-    ImGui::Text("Point Light Position:");
-    ImGui::Text("  X: %.2f, Y: %.2f, Z: %.2f", pointLight.x, pointLight.y, pointLight.z);
-    ImGui::Text("  Control: WASD + Up/Down");
+    if (ImGui::Button("Reset Camera"))
+    {
+        cameraTarget = { 0.0f, 0.8f, 0.0f };
+        cameraDistance = 3.0f;
+        cameraYaw = 0.0f;
+        cameraPitch = 20.0f;
+    }
     
-    ImGui::Separator();
-    
-    // スポットライトの位置
-    ImGui::Text("Spot Light Position:");
-    ImGui::Text("  X: %.2f, Y: %.2f, Z: %.2f", spotLightPos.x, spotLightPos.y, spotLightPos.z);
-    ImGui::Text("  Control: NumPad 4/6/8/2/9/3");
-    
-    // スポットライトの方向
-    ImGui::Text("Spot Light Direction:");
-    ImGui::Text("  X: %.2f, Y: %.2f, Z: %.2f", spotLightDir.x, spotLightDir.y, spotLightDir.z);
-    
-    // スポットライトの角度
-    ImGui::Text("Spot Light Angles:");
-    ImGui::Text("  Inner: %.1f deg", XMConvertToDegrees(spotInnerAngle));
-    ImGui::Text("  Outer: %.1f deg", XMConvertToDegrees(spotOuterAngle));
-    // ===============================================
+    ImGui::End();
+    // =============================================
 }
 
 void Stage::Release()
 {
+	sky_.Release();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

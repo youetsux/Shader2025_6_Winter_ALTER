@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine\\GameObject.h"
+#include "Engine\\SkyRenderer.h"
 #include <windows.h>
 #include "Engine\\Sprite.h"
 
@@ -32,6 +33,7 @@ private:
 	int hDonut_;
 	//Sprite* pMelbourne_;
 	ID3D11Buffer* pConstantBuffer_;
+	SkyRenderer sky_;
 	void InitConstantBuffer();
 };
 
