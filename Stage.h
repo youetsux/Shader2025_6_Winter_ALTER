@@ -10,9 +10,6 @@ struct CONSTANTBUFFER_STAGE
 {
 	XMFLOAT4 lightPosition;      // 点光源の位置
 	XMFLOAT4 eyePosition;        // カメラ位置
-	XMFLOAT4 spotLightPosition;  // ← スポットライトの位置
-	XMFLOAT4 spotLightDirection; // ← スポットライトの方向
-	XMFLOAT4 spotLightParams;    // ← x:内側角度cos, y:外側角度cos, z:減衰, w:未使用
 };
 
 class Stage :
