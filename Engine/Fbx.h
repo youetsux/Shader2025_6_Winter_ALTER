@@ -35,8 +35,9 @@ class Fbx
 public:
 	Fbx();
 	HRESULT Load(std::string fileName);
-	void    Draw(Transform& transform);
+	void    Draw(Transform& transform); //simple3D.hlslで描画する関数
 	void	DrawNormalMapped(Transform& transform);  // ← ノーマルマップ描画を追加
+	void	DrawToon(Transform& transform); // ← トゥーンシェーダー描画を追加
 	void    Release();
 
 	void InitVertex(FbxMesh* mesh);
@@ -95,6 +96,8 @@ private:
 	std::vector<std::vector<int>> ppIndex_; //マテリアルごとのインデックスデータ [material][index]
 	//auto& arr = ppIndex_[1];
 	//arr[0]~arr[index - 1];
+
+	Texture* pToonTexture_; //トゥーンシェーダー用のテクスチャ
 
 };
 

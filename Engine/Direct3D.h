@@ -16,6 +16,7 @@ enum SHADER_TYPE
 	SHADER_3D,	//3D用シェーダー
 	SHADER_2D,	//2D用シェーダー
 	SHADER_NORMALMAP, //法線マップ用シェーダー
+	SHADER_TOON, //トゥーンシェーダー
 	SHADER_MAX //シェーダーの最大数
 };
 
@@ -25,10 +26,12 @@ namespace Direct3D
 	extern ID3D11Device* pDevice;
 	extern ID3D11DeviceContext* pContext;
 	//シェーダー準備
-	HRESULT InitShader();
+	HRESULT InitShader(); //全てのシェーダー初期化
+	//↑以下を初期化
 	HRESULT InitShader3D();//3D用シェーダー初期化
 	HRESULT InitShader2D();//2D用シェーダー初期化
 	HRESULT InitNormalShader(); //法線マップ用シェーダー初期化
+	HRESULT InitToonShader(); //トゥーンシェーダー初期化
 
 	void SetShader(SHADER_TYPE type); //シェーダーをセット
 
