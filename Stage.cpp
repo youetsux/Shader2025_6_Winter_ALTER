@@ -20,6 +20,7 @@ Stage::Stage(GameObject* parent)
 	hRoom_ = -1;
 	hGround_ = -1;
 	hDonut_ = -1;
+	lightType_ = 1;  // デフォルト: 点光源
 
 	
 }
@@ -113,6 +114,8 @@ void Stage::Update()
     CONSTANTBUFFER_STAGE cb;
     cb.lightPosition = Direct3D::GetLightPos();
     XMStoreFloat4(&cb.eyePosition, Camera::GetPosition());
+    cb.lightType = lightType_;
+    cb._pad = { 0,0,0 };
 
 
     D3D11_MAPPED_SUBRESOURCE pdata;
@@ -145,20 +148,36 @@ void Stage::Draw()
     tDonut.position_ = { 0, 0.5, 0.0 };
     tDonut.rotate_.y += 0.1;
     Model::SetTransform(hDonut_, tDonut);
-    Model::DrawToon(hDonut_);
+    Model::Draw(hDonut_);
 
     // ========== ImGui でライト情報を表示 =========
     ImGui::Text("Stage Class rot: %lf", tDonut.rotate_.z);
-    
+
+    ImGui::Separator();
+    ImGui::Text("=== Light Type ===");
+    if (ImGui::Button("Directional")) { lightType_ = 0; }
+    ImGui::SameLine();
+    if (ImGui::Button("Point")) { lightType_ = 1; }
+    ImGui::SameLine();
+    ImGui::Text("Current: %s", lightType_ == 0 ? "Directional" : "Point");
+
     ImGui::Separator();
     ImGui::Text("=== Light Information ===");
-    
-    // 点光源の位置
+
     XMFLOAT4 pointLight = Direct3D::GetLightPos();
-    ImGui::Text("Point Light Position:");
-    ImGui::Text("  X: %.2f, Y: %.2f, Z: %.2f", pointLight.x, pointLight.y, pointLight.z);
-    ImGui::Text("  Control: WASD + Up/Down");
-    
+    if (lightType_ == 1)
+    {
+        ImGui::Text("Point Light Position:");
+        ImGui::Text("  X: %.2f, Y: %.2f, Z: %.2f", pointLight.x, pointLight.y, pointLight.z);
+        ImGui::Text("  Control: WASD + Up/Down");
+    }
+    else
+    {
+        ImGui::Text("Directional Light Direction:");
+        ImGui::Text("  X: %.2f, Y: %.2f, Z: %.2f", pointLight.x, pointLight.y, pointLight.z);
+        ImGui::Text("  Control: WASD + Up/Down");
+    }
+
     ImGui::Separator();
     
 }

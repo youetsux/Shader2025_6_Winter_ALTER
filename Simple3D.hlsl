@@ -25,6 +25,8 @@ cbuffer gStage : register(b1)
 {
     float4 lightPosition;
     float4 eyePosition;
+    int lightType;   // 0=平行光源, 1=点光源
+    float3 _pad;
 };
 
 
@@ -89,17 +91,26 @@ float4 PS(VS_OUT inData) : SV_Target
     float4 diffuse;
     float4 ambientColor = ambient;
     float4 ambentFactor = { 0.1, 0.1, 0.1, 1.0 };
-    
-    // ライトベクトル計算（最適化版）
-    float3 lightVec = lightPosition.xyz - inData.wpos.xyz;
-    float len = length(lightVec);
-    float3 L = lightVec / len;  // 正規化（normalize(lightVec)と同じ）
-    
-    // ========== 距離減衰を有効化==========
-    float3 k = { 0.2f, 0.2f, 1.0f };
-    float dTerm = 1.0 / (k.x + k.y * len + k.z * len * len);  // 距離減衰を有効化
-    //float dTerm = 1.0;  // 距離減衰なし（デバッグ用）
-    // ========== 距離減衰 END==========
+
+    float3 L;
+    float dTerm;
+
+    if (lightType == 0)
+    {
+        // ========== 平行光源 ==========
+        // lightPosition を方向ベクトルとして使用（位置ではなく向き）
+        L = normalize(lightPosition.xyz);
+        dTerm = 1.0;  // 距離減衰なし
+    }
+    else
+    {
+        // ========== 点光源 ==========
+        float3 lightVec = lightPosition.xyz - inData.wpos.xyz;
+        float len = length(lightVec);
+        L = lightVec / len;
+        float3 k = { 0.2f, 0.2f, 1.0f };
+        dTerm = 1.0 / (k.x + k.y * len + k.z * len * len);
+    }
     
     // 法線
     float3 N = normalize(inData.normal.xyz);
