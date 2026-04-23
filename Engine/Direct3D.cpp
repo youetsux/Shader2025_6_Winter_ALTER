@@ -35,7 +35,7 @@ namespace Direct3D
     ID3D11RasterizerState* pRasterizerState = nullptr;	//ラスタライザー
 	
     SHADER_BUNDLE shaderBundle[SHADER_MAX];	//シェーダーのバンドル
-	XMFLOAT4 lightPosition{ 0.0f, 0.5f ,0.0f, 0.0f }; //ライトの位置
+	XMFLOAT4 lightPosition{ 0.5f, -1.0f, 0.7f, 0.0f }; // 平行光源の方向ベクトル (右斜め前上から照らす)
 }
 
 
