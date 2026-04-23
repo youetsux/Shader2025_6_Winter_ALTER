@@ -234,6 +234,13 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Docs\00_overview.md" />
+    <None Include="Docs\Step1_LightMatrix.md" />
+    <None Include="Docs\Step2_ShadowMapTexture.md" />
+    <None Include="Docs\Step3_ShadowShader.md" />
+    <None Include="Docs\Step4_TwoPass.md" />
+    <None Include="Docs\Step5_ShadowReceive.md" />
+    <None Include="Docs\Step6_Debug.md" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
