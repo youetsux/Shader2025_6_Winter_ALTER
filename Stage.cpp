@@ -20,7 +20,7 @@ Stage::Stage(GameObject* parent)
 	hRoom_ = -1;
 	hGround_ = -1;
 	hDonut_ = -1;
-	lightType_ = 1;  // デフォルト: 点光源
+	lightType_ = 0;  // デフォルト: 平行光源
 
 	
 }
@@ -179,9 +179,23 @@ void Stage::Draw()
     }
 
     ImGui::Separator();
-    
-}
 
+    // ========== Step1 デバッグ：ライト行列を表示 ==========
+    if (ImGui::CollapsingHeader("Light Matrix Debug"))
+    {
+        XMMATRIX V  = Direct3D::GetLightViewMatrix();
+        XMMATRIX P  = Direct3D::GetLightProjectionMatrix();
+        XMMATRIX VP = V * P;
+
+        ImGui::Text("-- LightView --");
+        ImGui::Text("[0]: %.2f %.2f %.2f %.2f", V.r[0].m128_f32[0], V.r[0].m128_f32[1], V.r[0].m128_f32[2], V.r[0].m128_f32[3]);
+        ImGui::Text("[1]: %.2f %.2f %.2f %.2f", V.r[1].m128_f32[0], V.r[1].m128_f32[1], V.r[1].m128_f32[2], V.r[1].m128_f32[3]);
+        ImGui::Text("[2]: %.2f %.2f %.2f %.2f", V.r[2].m128_f32[0], V.r[2].m128_f32[1], V.r[2].m128_f32[2], V.r[2].m128_f32[3]);
+        ImGui::Text("[3]: %.2f %.2f %.2f %.2f", V.r[3].m128_f32[0], V.r[3].m128_f32[1], V.r[3].m128_f32[2], V.r[3].m128_f32[3]);
+    }
+    // ========== Step1 デバッグ END ==========
+
+}
 void Stage::Release()
 {
 }

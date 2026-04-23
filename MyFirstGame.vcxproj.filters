@@ -202,8 +202,9 @@
     <None Include="Docs\Step1_LightMatrix.md" />
     <None Include="Docs\Step2_ShadowMapTexture.md" />
     <None Include="Docs\Step3_ShadowShader.md" />
-    <None Include="Docs\Step4_TwoPass.md" />
     <None Include="Docs\Step5_ShadowReceive.md" />
     <None Include="Docs\Step6_Debug.md" />
+    <None Include="Docs\Step4_TwoPass.md" />
+    <None Include="Docs\progress.md" />
   </ItemGroup>
 </Project>

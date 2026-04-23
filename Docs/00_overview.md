@@ -41,14 +41,14 @@
 
 ## 実装ステップ一覧
 
-| Step | ファイル | 内容 | 動く状態 |
-|------|---------|------|----------|
-| [Step1](./Step1_LightMatrix.md) | `Direct3D.cpp/h` | ライト視点の行列を計算・ImGuiで確認 | 影なし・行列をデバッグ表示 |
-| [Step2](./Step2_ShadowMapTexture.md) | `Direct3D.cpp/h` | シャドウマップ用テクスチャを作成 | 影なし・テクスチャだけ存在 |
-| [Step3](./Step3_ShadowShader.md) | `ShadowMap.hlsl` + `Direct3D.cpp/h` | 深度だけ書くシェーダーを追加 | 影なし・シェーダー追加 |
-| [Step4](./Step4_TwoPass.md) | `Stage.cpp` + `Model.cpp/h` | 2パス描画を組み込む | 影なし・2パス構造完成 |
+| Step | ファイル | 内容 | ✅ ビルド後の状態 |
+|------|---------|------|-----------------|
+| [Step1](./Step1_LightMatrix.md) | `Direct3D.cpp/h` | ライト視点の行列を計算・ImGuiで確認 | 動く・行列がImGuiに表示される |
+| [Step2](./Step2_ShadowMapTexture.md) | `Direct3D.cpp/h` | シャドウマップ用テクスチャを作成 | 動く・ImGuiに「SRV: OK」表示 |
+| [Step3](./Step3_ShadowShader.md) | `ShadowMap.hlsl` + `Direct3D.cpp/h` | 深度だけ書くシェーダーを追加 | 動く・見た目変化なし |
+| [Step4](./Step4_TwoPass.md) | `Fbx/Model/Stage` | 2パス描画を組み込む（A〜Dの4段階） | 動く・見た目変化なし・2パス構造完成 |
 | [Step5](./Step5_ShadowReceive.md) | `Simple3D.hlsl` + `Stage.h/cpp` | 影の判定をシェーダーに追加 | **影が出る！** |
-| [Step6](./Step6_Debug.md) | `Stage.cpp` (ImGui) | デバッグUI・パラメータ調整 | 影の品質を調整できる |
+| [Step6](./Step6_Debug.md) | `Stage.cpp` (ImGui) | デバッグUI・パラメータ調整 | 影の品質をリアルタイムで調整できる |
 
 ---
 

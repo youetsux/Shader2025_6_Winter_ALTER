@@ -64,10 +64,13 @@ struct CONSTANTBUFFER_STAGE
     XMFLOAT4            lightPosition;  // 光源の方向 or 位置
     XMFLOAT4            eyePosition;    // カメラ位置
     int                 lightType;      // 0=平行光源, 1=点光源
-    XMFLOAT3            _pad;           // アライメント用
+    XMFLOAT3            _pad;           // アライメント用（Step6 でさらに変更します）
     XMFLOAT4X4          matLightVP;     // ライト視点の View×Projection 行列（影判定用）
 };
 ```
+
+> **注意：** Step6 で `shadowBias` を追加する際にこの struct をもう一度変更します。  
+> Step5 ではここに書いた形のまま進めてください。
 
 ---
 
@@ -231,7 +234,7 @@ Direct3D::pContext->PSSetSamplers(1, 1, &pShadowSampler);
 
 ---
 
-## 確認方法
+## ✅ ここでビルドして実行
 
 1. ビルドして実行する
 2. **モデルに影が表示されれば成功！**

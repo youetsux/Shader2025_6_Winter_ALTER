@@ -526,3 +526,27 @@ void Direct3D::SetLightPos(DirectX::XMFLOAT4 pos)
 {
 	lightPosition = pos;
 }
+
+// ライトのビュー行列を返す
+// lightPosition は「光が来る方向ベクトル」なので、逆方向に仮想的な光源位置を置く
+DirectX::XMMATRIX Direct3D::GetLightViewMatrix()
+{
+	XMVECTOR lightDir = XMLoadFloat4(&lightPosition);
+	XMVECTOR lightEye = -XMVector3Normalize(lightDir) * 10.0f; // 原点から10離れた仮想ライト位置
+	XMVECTOR lightAt  = XMVectorSet(0, 0, 0, 0);               // 注視点：シーンの中心
+	XMVECTOR lightUp  = XMVectorSet(0, 1, 0, 0);               // 上方向
+
+	return XMMatrixLookAtLH(lightEye, lightAt, lightUp);
+}
+
+// ライトの正射影行列を返す
+// 平行光源なので XMMatrixOrthographicLH（透視投影ではない）
+DirectX::XMMATRIX Direct3D::GetLightProjectionMatrix()
+{
+	float width  = 20.0f; // シーンをカバーする幅
+	float height = 20.0f; // シーンをカバーする高さ
+	float nearZ  =  1.0f; // 近クリップ面
+	float farZ   = 50.0f; // 遠クリップ面
+
+	return XMMatrixOrthographicLH(width, height, nearZ, farZ);
+}

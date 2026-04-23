@@ -50,4 +50,8 @@ namespace Direct3D
 
 	DirectX::XMFLOAT4 GetLightPos(); //ライトの位置
 	void SetLightPos(DirectX::XMFLOAT4 pos); //ライトの位置設定
+
+	// シャドウマップ用：ライト視点の行列
+	DirectX::XMMATRIX GetLightViewMatrix();       // ライトのビュー行列
+	DirectX::XMMATRIX GetLightProjectionMatrix(); // ライトの正射影行列
 };
