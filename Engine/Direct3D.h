@@ -17,6 +17,7 @@ enum SHADER_TYPE
 	SHADER_2D,	//2D用シェーダー
 	SHADER_NORMALMAP, //法線マップ用シェーダー
 	SHADER_TOON, //トゥーンシェーダー
+	SHADER_SHADOWMAP, //シャドウマップ生成用
 	SHADER_MAX //シェーダーの最大数
 };
 
@@ -32,6 +33,7 @@ namespace Direct3D
 	HRESULT InitShader2D();//2D用シェーダー初期化
 	HRESULT InitNormalShader(); //法線マップ用シェーダー初期化
 	HRESULT InitToonShader(); //トゥーンシェーダー初期化
+	HRESULT InitShadowShader(); //シャドウマップ用シェーダー初期化
 
 	void SetShader(SHADER_TYPE type); //シェーダーをセット
 
