@@ -137,6 +137,9 @@ void Stage::Draw()
     // ========================================
     Direct3D::BeginShadowPass();
 
+    // ── シャドウキャスター（影を落とすオブジェクト）のみここで描く ──
+    // 部屋はレシーバー（影を受ける側）なのでシャドウパスには含めない
+    // 理由：部屋をここに入れると外壁がライトを遮り、室内が全て影になる
     static Transform tDonut;
     tDonut.scale_    = { 0.2f, 0.2f, 0.2f };
     tDonut.position_ = { 0, 0.5f, 0.0f };
@@ -147,8 +150,7 @@ void Stage::Draw()
     Transform tr;
     tr.position_ = { 0, 0, 0 };
     tr.rotate_   = { 0, 180, 0 };
-    Model::SetTransform(hRoom_, tr);
-    Model::DrawShadow(hRoom_);
+    // Model::DrawShadow(hRoom_);  // レシーバーのみ・キャスターではない
 
     Direct3D::EndShadowPass();
 
