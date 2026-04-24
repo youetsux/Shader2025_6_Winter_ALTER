@@ -203,7 +203,9 @@
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="ShadowMap.hlsl"><ExcludedFromBuild>true</ExcludedFromBuild></FxCompile>
+    <FxCompile Include="ShadowMap.hlsl">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="Simple2D.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
@@ -251,7 +253,7 @@
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
-		<ErrorText>‚±?EƒvƒƒWƒFƒNƒg?EA‚±‚ÌƒRƒ“ƒsƒ…[ƒ^[ã‚É‚È‚ŸENuGet ƒpƒbƒP[ƒW‚ðŽQÆ‚µ‚Ä‚ŸE??‚·B‚»‚ê‚ç‚ÌƒpƒbƒP[ƒW‚ðƒ_ƒEƒ“ƒ[ƒh‚·‚é‚É‚ÍA[NuGet ƒpƒbƒP[ƒW‚Ì•œŒ³] ‚ðŽg—p‚µ‚Ü‚·BÚ×‚É‚Â‚ŸE??‚ÍAhttp://go.microsoft.com/fwlink/?LinkID=322105 ‚ðŽQÆ‚µ‚Ä‚­‚¾‚³‚¢BŒ©‚Â‚©‚ç‚È‚ŸE??ƒ@ƒCƒ‹‚Í {0} ‚Å‚·A</ErrorText>
+      <ErrorText>ï¿½ï¿½?Eï¿½vï¿½ï¿½ï¿½Wï¿½Fï¿½Nï¿½g?Eï¿½Aï¿½ï¿½ï¿½ÌƒRï¿½ï¿½ï¿½sï¿½ï¿½ï¿½[ï¿½^ï¿½[ï¿½ï¿½É‚È‚ï¿½ENuGet ï¿½pï¿½bï¿½Pï¿½[ï¿½Wï¿½ï¿½Qï¿½Æ‚ï¿½ï¿½Ä‚ï¿½E??ï¿½ï¿½ï¿½Bï¿½ï¿½ï¿½ï¿½ï¿½Ìƒpï¿½bï¿½Pï¿½[ï¿½Wï¿½ï¿½_ï¿½Eï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½ï¿½É‚ÍA[NuGet ï¿½pï¿½bï¿½Pï¿½[ï¿½Wï¿½Ì•ï¿½ï¿½ï¿½] ï¿½ï¿½gï¿½pï¿½ï¿½ï¿½Ü‚ï¿½ï¿½Bï¿½Ú×‚É‚Â‚ï¿½E??ï¿½ÍAhttp://go.microsoft.com/fwlink/?LinkID=322105 ï¿½ï¿½Qï¿½Æ‚ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Bï¿½ï¿½ï¿½Â‚ï¿½ï¿½ï¿½È‚ï¿½E??ï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ {0} ï¿½Å‚ï¿½ï¿½A</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('packages\directxtex_desktop_win10.2025.3.25.2\build\native\directxtex_desktop_win10.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\directxtex_desktop_win10.2025.3.25.2\build\native\directxtex_desktop_win10.targets'))" />
   </Target>
