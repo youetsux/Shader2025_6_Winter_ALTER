@@ -555,13 +555,18 @@ void Direct3D::SetLightPos(DirectX::XMFLOAT4 pos)
 }
 
 // ライトのビュー行列を返す
-// lightPosition は「光が来る方向ベクトル」なので、逆方向に仮想的な光源位置を置く
+// lightPosition は「サーフェスから光源へ向かう方向ベクトル」(diffuse の L と同じ慣例)
+// lightEye は lightPosition 方向に置く（negation 不要）
 DirectX::XMMATRIX Direct3D::GetLightViewMatrix()
 {
-	XMVECTOR lightDir = XMLoadFloat4(&lightPosition);
-	XMVECTOR lightEye = -XMVector3Normalize(lightDir) * 10.0f; // 原点から10離れた仮想ライト位置
-	XMVECTOR lightAt  = XMVectorSet(0, 0, 0, 0);               // 注視点：シーンの中心
-	XMVECTOR lightUp  = XMVectorSet(0, 1, 0, 0);               // 上方向
+	XMVECTOR lightDir  = XMVector3Normalize(XMLoadFloat4(&lightPosition));
+	XMVECTOR lightEye  = lightDir * 10.0f;  // lightPosition 方向 = 光源位置
+	XMVECTOR lightAt   = XMVectorSet(0, 0, 0, 0);
+
+	// lightDir が Y 軸に平行なとき LookAt が破綻するので up を Z 軸に切り替える
+	XMVECTOR upY = XMVectorSet(0, 1, 0, 0);
+	float dotY   = fabsf(XMVectorGetX(XMVector3Dot(lightDir, upY)));
+	XMVECTOR lightUp = (dotY > 0.99f) ? XMVectorSet(0, 0, 1, 0) : upY;
 
 	return XMMatrixLookAtLH(lightEye, lightAt, lightUp);
 }
@@ -570,10 +575,10 @@ DirectX::XMMATRIX Direct3D::GetLightViewMatrix()
 // 平行光源なので XMMatrixOrthographicLH（透視投影ではない）
 DirectX::XMMATRIX Direct3D::GetLightProjectionMatrix()
 {
-	float width  = 20.0f; // シーンをカバーする幅
-	float height = 20.0f; // シーンをカバーする高さ
-	float nearZ  =  1.0f; // 近クリップ面
-	float farZ   = 50.0f; // 遠クリップ面
+	float width  =  5.0f; // 部屋サイズに合わせて縮小（元 20）→ テクセル密度 4 倍
+	float height =  5.0f;
+	float nearZ  =  1.0f;
+	float farZ   = 50.0f;
 
 	return XMMatrixOrthographicLH(width, height, nearZ, farZ);
 }
@@ -686,9 +691,10 @@ HRESULT Direct3D::InitShadowShader()
 	pCompilePS->Release();
 
 	// ラスタライザー
-	// CullMode を CULL_FRONT にするとシャドウアクネ（影のノイズ）が減る
+	// CULL_FRONT はシャドウアクネ防止になるが、背面深度が床深度と近すぎて誤判定が起きる
+	// CULL_NONE にして前面（ライト方向を向く面）の深度を正確に書き込む
 	D3D11_RASTERIZER_DESC rdc = {};
-	rdc.CullMode              = D3D11_CULL_FRONT;
+	rdc.CullMode              = D3D11_CULL_NONE;
 	rdc.FillMode              = D3D11_FILL_SOLID;
 	rdc.FrontCounterClockwise = FALSE;
 	rdc.DepthClipEnable       = TRUE;

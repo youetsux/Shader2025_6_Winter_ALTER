@@ -64,6 +64,25 @@ void Stage::Initialize()
 	//pMelbourne_ = new Sprite(L"Assets\\melbourne.png");
 	Camera::SetPosition({ 0, 0.8, -2.8 });
 	Camera::SetTarget({ 0,0.8,0 });
+
+	// 比較サンプラー（シャドウマップ用）を作成してスロット s1 にセット
+	D3D11_SAMPLER_DESC sampDesc = {};
+	sampDesc.Filter         = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+	sampDesc.AddressU       = D3D11_TEXTURE_ADDRESS_BORDER;
+	sampDesc.AddressV       = D3D11_TEXTURE_ADDRESS_BORDER;
+	sampDesc.AddressW       = D3D11_TEXTURE_ADDRESS_BORDER;
+	sampDesc.BorderColor[0] = 1.0f; // 範囲外は「影なし」扱い
+	sampDesc.BorderColor[1] = 1.0f;
+	sampDesc.BorderColor[2] = 1.0f;
+	sampDesc.BorderColor[3] = 1.0f;
+	sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+	sampDesc.MinLOD         = 0;
+	sampDesc.MaxLOD         = D3D11_FLOAT32_MAX;
+
+	ID3D11SamplerState* pShadowSampler = nullptr;
+	Direct3D::pDevice->CreateSamplerState(&sampDesc, &pShadowSampler);
+	Direct3D::pContext->PSSetSamplers(1, 1, &pShadowSampler);
+	SAFE_RELEASE(pShadowSampler); // コンテキストが参照を保持するのでここで解放OK
 }
 
 void Stage::Update()
@@ -117,6 +136,12 @@ void Stage::Update()
     cb.lightType = lightType_;
     cb._pad = { 0,0,0 };
 
+    // ライト視点の VP 行列を計算して送信
+    XMMATRIX lightV  = Direct3D::GetLightViewMatrix();
+    XMMATRIX lightP  = Direct3D::GetLightProjectionMatrix();
+    XMMATRIX lightVP = lightV * lightP;
+    XMStoreFloat4x4(&cb.matLightVP, lightVP); // row_major 指定なので転置不要
+
 
     D3D11_MAPPED_SUBRESOURCE pdata;
     Direct3D::pContext->Map(pConstantBuffer_, 0, D3D11_MAP_WRITE_DISCARD, 0, &pdata);
@@ -159,6 +184,10 @@ void Stage::Draw()
     // カメラ視点でシーンを描画する（まだ影は出ない → Step5 で追加）
     // ========================================
 
+    // シャドウマップ SRV をピクセルシェーダーのスロット t1 にセット
+    ID3D11ShaderResourceView* pShadowSRV = Direct3D::GetShadowMapSRV();
+    Direct3D::pContext->PSSetShaderResources(1, 1, &pShadowSRV);
+
     // ライトの位置を示す小さなボール（パス2 のみ・影は不要）
     Transform ltr;
     ltr.position_ = { Direct3D::GetLightPos().x, Direct3D::GetLightPos().y, Direct3D::GetLightPos().z };
@@ -171,6 +200,10 @@ void Stage::Draw()
 
     Model::SetTransform(hDonut_, tDonut);
     Model::Draw(hDonut_);
+
+    // SRV を解除する（次フレームのパス1で DSV と SRV が同時バインドされるのを防ぐ）
+    ID3D11ShaderResourceView* nullSRV = nullptr;
+    Direct3D::pContext->PSSetShaderResources(1, 1, &nullSRV);
 
     // ========== ImGui でライト情報を表示 =========
     ImGui::Text("Stage Class rot: %lf", tDonut.rotate_.z);

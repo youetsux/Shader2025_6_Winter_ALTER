@@ -1,8 +1,11 @@
 //───────────────────────────────────────
 // テクスチャ＆サンプラーデータのグローバル変数定義
 //───────────────────────────────────────
-Texture2D g_texture : register(t0); //テクスチャー
-SamplerState g_sampler : register(s0); //サンプラー
+Texture2D              g_texture      : register(t0); // モデルのテクスチャ
+SamplerState           g_sampler      : register(s0); // 通常サンプラー
+
+Texture2D              g_shadowMap    : register(t1); // シャドウマップ（深度テクスチャ）
+SamplerComparisonState g_shadowSampler: register(s1); // 比較サンプラー
 
 //───────────────────────────────────────
 // コンスタントバッファ
@@ -23,10 +26,11 @@ cbuffer global : register(b0)
 
 cbuffer gStage : register(b1)
 {
-    float4 lightPosition;
-    float4 eyePosition;
-    int lightType;   // 0=平行光源, 1=点光源
-    float3 _pad;
+    float4             lightPosition;
+    float4             eyePosition;
+    int                lightType;   // 0=平行光源, 1=点光源
+    float3             _pad;
+    row_major float4x4 matLightVP;  // ライト視点の VP 行列
 };
 
 
@@ -146,5 +150,42 @@ float4 PS(VS_OUT inData) : SV_Target
     }
     
     float4 color = diffuseTerm + specularCol + ambientTerm;
+
+    // ========== シャドウ判定 ==========
+    float shadow = 1.0; // デフォルト: 影なし（明るい）
+
+    // ① ワールド座標をライト視点のクリップ空間に変換
+    float4 lightClipPos = mul(inData.wpos, matLightVP);
+
+    // ② クリップ座標 → UV 座標に変換
+    // クリップ空間は -1?+1、UV 空間は 0?1（Y軸は反転）
+    float2 shadowUV;
+    shadowUV.x =  lightClipPos.x / lightClipPos.w * 0.5 + 0.5;
+    shadowUV.y = -lightClipPos.y / lightClipPos.w * 0.5 + 0.5;
+
+    // ③ UV が 0?1 の範囲内にある場合のみ判定（範囲外 = ライトの視野外）
+    if (shadowUV.x >= 0.0 && shadowUV.x <= 1.0 &&
+        shadowUV.y >= 0.0 && shadowUV.y <= 1.0)
+    {
+        // ④ 現在のピクセルの深度値
+        float currentDepth = lightClipPos.z / lightClipPos.w;
+
+        // ⑤ シャドウバイアス
+        // GREATER_EQUAL では compareValue = currentDepth - bias にすることで
+        // ⑤ シャドウバイアス（自己シャドウ＝ドーナツが自分に影を落とすアクネを防ぐ）
+        // LESS_EQUAL + bias: compare = currentDepth - bias → bias 分だけ"手前"と見なして判定
+        // 大きすぎると床の影が消える（床との深度差 ? 0.007 を超えないこと）
+        float bias = 0.005;
+
+        // ⑥ 比較サンプラーで深度を比較
+        // LESS_EQUAL: (currentDepth - bias) <= shadowMap なら 1.0（明るい）
+        shadow = g_shadowMap.SampleCmpLevelZero(
+            g_shadowSampler, shadowUV, currentDepth - bias);
+    }
+
+    // ⑦ 影の適用（影の中は 30% の明るさを残す）
+    color *= (0.3 + 0.7 * shadow);
+    // ========== シャドウ判定 END ==========
+
     return color;
 }
