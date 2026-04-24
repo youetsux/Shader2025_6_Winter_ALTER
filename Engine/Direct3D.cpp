@@ -691,8 +691,8 @@ HRESULT Direct3D::InitShadowShader()
 	pCompilePS->Release();
 
 	// ラスタライザー
-	// CULL_FRONT はシャドウアクネ防止になるが、背面深度が床深度と近すぎて誤判定が起きる
-	// CULL_NONE にして前面（ライト方向を向く面）の深度を正確に書き込む
+	// CULL_NONE にして前面（ライト向き）の深度を正確に書き込む
+	// → 詳細は下の説明コメント参照
 	D3D11_RASTERIZER_DESC rdc = {};
 	rdc.CullMode              = D3D11_CULL_NONE;
 	rdc.FillMode              = D3D11_FILL_SOLID;
