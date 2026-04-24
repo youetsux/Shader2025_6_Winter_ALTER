@@ -37,6 +37,9 @@ namespace Direct3D
 	SHADER_BUNDLE shaderBundle[SHADER_MAX];	//シェーダーのバンドル
 	XMFLOAT4 lightPosition{ 0.5f, -1.0f, 0.7f, 0.0f }; // 平行光源の方向ベクトル (右斜め前上から照らす)
 
+	int screenWidth  = 0; // 画面幅（EndShadowPass でビューポートを戻すために保存）
+	int screenHeight = 0; // 画面高さ
+
 	// ========== シャドウマップ用リソース ==========
 	ID3D11Texture2D*          pShadowMapTexture = nullptr; // 深度を格納するテクスチャ
 	ID3D11DepthStencilView*   pShadowMapDSV     = nullptr; // 書き込み口
@@ -392,6 +395,9 @@ void Direct3D::SetShader(SHADER_TYPE type)
 
 HRESULT Direct3D::Initialize(int winW, int winH, HWND hWnd)
 {
+    screenWidth  = winW;
+    screenHeight = winH;
+
     // Direct3Dの初期化
     DXGI_SWAP_CHAIN_DESC scDesc = {};
     //とりあえず全部0
@@ -692,3 +698,43 @@ HRESULT Direct3D::InitShadowShader()
 }
 
 // ========== シャドウマップ END ==========
+
+void Direct3D::BeginShadowPass()
+{
+    // シャドウマップの深度値を 1.0（最大値）でクリア
+    pContext->ClearDepthStencilView(pShadowMapDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+    // レンダーターゲットをシャドウマップ専用に切り替える
+    // RTV = nullptr → 色は一切書かない
+    // DSV = pShadowMapDSV → 深度だけシャドウマップに書く
+    ID3D11RenderTargetView* nullRTV = nullptr;
+    pContext->OMSetRenderTargets(1, &nullRTV, pShadowMapDSV);
+
+    // ビューポートをシャドウマップのサイズに合わせる
+    D3D11_TEXTURE2D_DESC texDesc;
+    pShadowMapTexture->GetDesc(&texDesc);
+
+    D3D11_VIEWPORT vp = {};
+    vp.Width    = (float)texDesc.Width;
+    vp.Height   = (float)texDesc.Height;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    pContext->RSSetViewports(1, &vp);
+
+    // シャドウ専用シェーダーをセット
+    SetShader(SHADER_SHADOWMAP);
+}
+
+void Direct3D::EndShadowPass()
+{
+    // レンダーターゲットを通常の画面（RTV + 深度ステンシル）に戻す
+    pContext->OMSetRenderTargets(1, &pRenderTargetView, pDepthStencilView);
+
+    // ビューポートも画面サイズに戻す
+    D3D11_VIEWPORT vp = {};
+    vp.Width    = (float)screenWidth;
+    vp.Height   = (float)screenHeight;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    pContext->RSSetViewports(1, &vp);
+}

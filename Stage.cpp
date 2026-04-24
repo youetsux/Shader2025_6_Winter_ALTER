@@ -130,23 +130,43 @@ void Stage::Update()
 
 void Stage::Draw()
 {
-    Transform ltr;
-    ltr.position_ = { Direct3D::GetLightPos().x, Direct3D::GetLightPos().y, Direct3D::GetLightPos().z };
-    ltr.scale_ = { 0.1, 0.1, 0.1 };
-    Model::SetTransform(hball_, ltr);
-    Model::Draw(hball_);
+    // ========================================
+    // パス1：シャドウパス
+    // ライト視点でシーンを描画して深度テクスチャ（シャドウマップ）を作る
+    // この時点では画面には何も表示されない
+    // ========================================
+    Direct3D::BeginShadowPass();
+
+    static Transform tDonut;
+    tDonut.scale_    = { 0.2f, 0.2f, 0.2f };
+    tDonut.position_ = { 0, 0.5f, 0.0f };
+    tDonut.rotate_.y += 0.1f;
+    Model::SetTransform(hDonut_, tDonut);
+    Model::DrawShadow(hDonut_);
 
     Transform tr;
     tr.position_ = { 0, 0, 0 };
-    tr.rotate_ = { 0, 180, 0 };
+    tr.rotate_   = { 0, 180, 0 };
+    Model::SetTransform(hRoom_, tr);
+    Model::DrawShadow(hRoom_);
+
+    Direct3D::EndShadowPass();
+
+    // ========================================
+    // パス2：メインパス（通常描画）
+    // カメラ視点でシーンを描画する（まだ影は出ない → Step5 で追加）
+    // ========================================
+
+    // ライトの位置を示す小さなボール（パス2 のみ・影は不要）
+    Transform ltr;
+    ltr.position_ = { Direct3D::GetLightPos().x, Direct3D::GetLightPos().y, Direct3D::GetLightPos().z };
+    ltr.scale_ = { 0.1f, 0.1f, 0.1f };
+    Model::SetTransform(hball_, ltr);
+    Model::Draw(hball_);
 
     Model::SetTransform(hRoom_, tr);
     Model::Draw(hRoom_);
 
-    static Transform tDonut;
-    tDonut.scale_ = { 0.2, 0.2, 0.2 };
-    tDonut.position_ = { 0, 0.5, 0.0 };
-    tDonut.rotate_.y += 0.1;
     Model::SetTransform(hDonut_, tDonut);
     Model::Draw(hDonut_);
 

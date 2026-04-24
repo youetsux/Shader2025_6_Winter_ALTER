@@ -60,4 +60,7 @@ namespace Direct3D
 	// シャドウマップ用リソース
 	HRESULT InitShadowMap(int width, int height); // シャドウマップの初期化
 	ID3D11ShaderResourceView* GetShadowMapSRV();  // シェーダーで読む口を取得
+
+	void BeginShadowPass();  // シャドウ用レンダーターゲットに切り替える
+	void EndShadowPass();    // 通常のレンダーターゲットに戻す
 };
