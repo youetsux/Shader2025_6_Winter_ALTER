@@ -2,11 +2,11 @@
 
 ## 学習目標
 
-- カメラ行列とライト行列は「見る場所・向きが違うだけで同じもの」だと理解する
-- `XMMatrixLookAtLH` と `XMMatrixOrthographicLH` の使い方を知る
-- まず**値を計算して ImGui に表示するだけ**にして、行列が何者かを体感する
+* カメラ行列とライト行列は「見る場所・向きが違うだけで同じもの」だと理解する
+* `XMMatrixLookAtLH` と `XMMatrixOrthographicLH` の使い方を知る
+* まず**値を計算して ImGui に表示するだけ**にして、行列が何者かを体感する
 
----
+\---
 
 ## 理論：ライト視点の行列とは
 
@@ -28,15 +28,15 @@ matLightVP = matLightView × matLightProjection
 
 ### 平行光源では「正射影」を使う理由
 
-| 投影方式 | 使う場面 | 特徴 |
-|---------|---------|------|
-| 透視投影（Perspective） | カメラ・点光源 | 遠いほど小さく見える |
-| 正射影（Orthographic） | **平行光源** | 距離に関係なく同じサイズ |
+|投影方式|使う場面|特徴|
+|-|-|-|
+|透視投影（Perspective）|カメラ・点光源|遠いほど小さく見える|
+|正射影（Orthographic）|**平行光源**|距離に関係なく同じサイズ|
 
 太陽光のような平行光源は「無限遠から平行に降り注ぐ」ため、  
 距離による拡大縮小が起きない正射影が正しい選択です。
 
----
+\---
 
 ## 変更内容
 
@@ -45,12 +45,14 @@ matLightVP = matLightView × matLightProjection
 `GetLightViewMatrix()` と `GetLightProjectionMatrix()` の2つの関数を追加します。
 
 **変更前（末尾付近）：**
+
 ```cpp
 DirectX::XMFLOAT4 GetLightPos();
 void SetLightPos(DirectX::XMFLOAT4 pos);
 ```
 
 **変更後：**
+
 ```cpp
 DirectX::XMFLOAT4 GetLightPos();
 void SetLightPos(DirectX::XMFLOAT4 pos);
@@ -60,7 +62,7 @@ DirectX::XMMATRIX GetLightViewMatrix();       // ライトのビュー行列
 DirectX::XMMATRIX GetLightProjectionMatrix(); // ライトの正射影行列
 ```
 
----
+\---
 
 ### 変更ファイル：`Engine/Direct3D.cpp`
 
@@ -74,8 +76,8 @@ DirectX::XMMATRIX Direct3D::GetLightViewMatrix()
 {
     // lightPosition は「光の方向ベクトル」なので、
     // 逆方向に少し離れた場所に「仮想ライト位置」を置く
-    XMVECTOR lightDir = XMLoadFloat4(&lightPosition);
-    XMVECTOR lightEye = -XMVector3Normalize(lightDir) * 10.0f; // 原点から10離れた位置
+    XMVECTOR lightDir = XMLoadFloat4(\\\&lightPosition);
+    XMVECTOR lightEye = -XMVector3Normalize(lightDir) \\\* 10.0f; // 原点から10離れた位置
     XMVECTOR lightAt  = XMVectorSet(0, 0, 0, 0);               // 注視点：シーンの中心
     XMVECTOR lightUp  = XMVectorSet(0, 1, 0, 0);               // 上方向
 
@@ -96,7 +98,7 @@ DirectX::XMMATRIX Direct3D::GetLightProjectionMatrix()
 }
 ```
 
----
+\---
 
 ### 変更ファイル：`Stage.cpp`
 
@@ -108,21 +110,21 @@ if (ImGui::CollapsingHeader("Light Matrix Debug"))
 {
     XMMATRIX V = Direct3D::GetLightViewMatrix();
     XMMATRIX P = Direct3D::GetLightProjectionMatrix();
-    XMMATRIX VP = V * P;
+    XMMATRIX VP = V \\\* P;
 
-    ImGui::Text("LightView[0]: %.2f %.2f %.2f %.2f",
-        V.r[0].m128_f32[0], V.r[0].m128_f32[1], V.r[0].m128_f32[2], V.r[0].m128_f32[3]);
-    ImGui::Text("LightView[1]: %.2f %.2f %.2f %.2f",
-        V.r[1].m128_f32[0], V.r[1].m128_f32[1], V.r[1].m128_f32[2], V.r[1].m128_f32[3]);
-    ImGui::Text("LightView[2]: %.2f %.2f %.2f %.2f",
-        V.r[2].m128_f32[0], V.r[2].m128_f32[1], V.r[2].m128_f32[2], V.r[2].m128_f32[3]);
-    ImGui::Text("LightView[3]: %.2f %.2f %.2f %.2f",
-        V.r[3].m128_f32[0], V.r[3].m128_f32[1], V.r[3].m128_f32[2], V.r[3].m128_f32[3]);
+    ImGui::Text("LightView\\\[0]: %.2f %.2f %.2f %.2f",
+        V.r\\\[0].m128\\\_f32\\\[0], V.r\\\[0].m128\\\_f32\\\[1], V.r\\\[0].m128\\\_f32\\\[2], V.r\\\[0].m128\\\_f32\\\[3]);
+    ImGui::Text("LightView\\\[1]: %.2f %.2f %.2f %.2f",
+        V.r\\\[1].m128\\\_f32\\\[0], V.r\\\[1].m128\\\_f32\\\[1], V.r\\\[1].m128\\\_f32\\\[2], V.r\\\[1].m128\\\_f32\\\[3]);
+    ImGui::Text("LightView\\\[2]: %.2f %.2f %.2f %.2f",
+        V.r\\\[2].m128\\\_f32\\\[0], V.r\\\[2].m128\\\_f32\\\[1], V.r\\\[2].m128\\\_f32\\\[2], V.r\\\[2].m128\\\_f32\\\[3]);
+    ImGui::Text("LightView\\\[3]: %.2f %.2f %.2f %.2f",
+        V.r\\\[3].m128\\\_f32\\\[0], V.r\\\[3].m128\\\_f32\\\[1], V.r\\\[3].m128\\\_f32\\\[2], V.r\\\[3].m128\\\_f32\\\[3]);
 }
 // ========== Step1 デバッグ END ==========
 ```
 
----
+\---
 
 ## ✅ ここでビルドして実行
 
@@ -131,10 +133,10 @@ if (ImGui::CollapsingHeader("Light Matrix Debug"))
 3. `LightView` の4行4列の数値が表示されれば成功
 4. WASD でライト方向を動かすと行列の数値がリアルタイムに変わることを確認する
 
-> **ポイント：** 見た目は変わりません。行列の数値が変わることだけ確認しましょう。  
+> \\\*\\\*ポイント：\\\*\\\* 見た目は変わりません。行列の数値が変わることだけ確認しましょう。  
 > これが「ライトの向きに連動してビュー行列が変わる」証拠です。
 
----
+\---
 
 ## よくある疑問
 
@@ -147,8 +149,9 @@ A. 平行光源は「無限遠から来る平行な光」なので位置に意�
 A. シーン全体が収まるサイズにします。小さすぎると影が欠け、大きすぎると精度が落ちます。  
 　Step6 で ImGui スライダーで調整できるようにします。
 
----
+\---
 
 ## 次のステップ
 
 [Step2 → シャドウマップ用テクスチャを作成する](./Step2_ShadowMapTexture.md)
+
