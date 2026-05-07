@@ -203,6 +203,9 @@
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="ShadowMap.hlsl">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="Simple2D.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
@@ -250,7 +253,7 @@
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
-      <ErrorText>このプロジェクトは、このコンピューター上にない NuGet パッケージを参照しています。それらのパッケージをダウンロードするには、[NuGet パッケージの復元] を使用します。詳細については、http://go.microsoft.com/fwlink/?LinkID=322105 を参照してください。見つからないファイルは {0} です。</ErrorText>
+      <ErrorText>��?E�v���W�F�N�g?E�A���̃R���s���[�^�[��ɂȂ�ENuGet �p�b�P�[�W��Q�Ƃ��Ă�E??���B�����̃p�b�P�[�W��_�E�����[�h����ɂ́A[NuGet �p�b�P�[�W�̕���] ��g�p���܂��B�ڍׂɂ�E??�́Ahttp://go.microsoft.com/fwlink/?LinkID=322105 ��Q�Ƃ��Ă��������B������Ȃ�E??�@�C���� {0} �ł��A</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('packages\directxtex_desktop_win10.2025.3.25.2\build\native\directxtex_desktop_win10.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\directxtex_desktop_win10.2025.3.25.2\build\native\directxtex_desktop_win10.targets'))" />
   </Target>

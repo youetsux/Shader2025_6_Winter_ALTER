@@ -20,7 +20,7 @@ Stage::Stage(GameObject* parent)
 	hRoom_ = -1;
 	hGround_ = -1;
 	hDonut_ = -1;
-	lightType_ = 0;  // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆ: å¹³è¡Œå…‰æº
+	lightType_ = 0;  // ƒfƒtƒHƒ‹ƒg: •½sŒõŒ¹
 
 	
 }
@@ -40,12 +40,12 @@ void Stage::InitConstantBuffer()
 	cb.MiscFlags = 0;
 	cb.StructureByteStride = 0;
 
-	// ã‚³ãƒ³ã‚¹ã‚¿ãƒ³ãƒˆãƒãƒƒãƒ•ã‚¡ã®ä½œæˆ
+	// ƒRƒ“ƒXƒ^ƒ“ƒgƒoƒbƒtƒ@‚Ìì¬
 	HRESULT hr;
 	hr = Direct3D::pDevice->CreateBuffer(&cb, nullptr, &pConstantBuffer_);
 	if (FAILED(hr))
 	{
-		MessageBox(NULL, L"ã‚³ãƒ³ã‚¹ã‚¿ãƒ³ãƒˆãƒãƒƒãƒ•ã‚¡ã®ä½œæˆã«å¤±æ•—ã—ã¾ã—ãŸ", L"ã‚¨ãƒ©ãƒ¼", MB_OK);
+		MessageBox(NULL, L"ƒRƒ“ƒXƒ^ƒ“ƒgƒoƒbƒtƒ@‚Ìì¬‚É¸”s‚µ‚Ü‚µ‚½", L"ƒGƒ‰[", MB_OK);
 	}
 }
 
@@ -64,13 +64,32 @@ void Stage::Initialize()
 	//pMelbourne_ = new Sprite(L"Assets\\melbourne.png");
 	Camera::SetPosition({ 0, 0.8, -2.8 });
 	Camera::SetTarget({ 0,0.8,0 });
+
+	// ”äŠrƒTƒ“ƒvƒ‰[iƒVƒƒƒhƒEƒ}ƒbƒv—pj‚ğì¬‚µ‚ÄƒXƒƒbƒg s1 ‚ÉƒZƒbƒg
+	D3D11_SAMPLER_DESC sampDesc = {};
+	sampDesc.Filter         = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+	sampDesc.AddressU       = D3D11_TEXTURE_ADDRESS_BORDER;
+	sampDesc.AddressV       = D3D11_TEXTURE_ADDRESS_BORDER;
+	sampDesc.AddressW       = D3D11_TEXTURE_ADDRESS_BORDER;
+	sampDesc.BorderColor[0] = 1.0f; // ”ÍˆÍŠO‚Íu‰e‚È‚µvˆµ‚¢
+	sampDesc.BorderColor[1] = 1.0f;
+	sampDesc.BorderColor[2] = 1.0f;
+	sampDesc.BorderColor[3] = 1.0f;
+	sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+	sampDesc.MinLOD         = 0;
+	sampDesc.MaxLOD         = D3D11_FLOAT32_MAX;
+
+	ID3D11SamplerState* pShadowSampler = nullptr;
+	Direct3D::pDevice->CreateSamplerState(&sampDesc, &pShadowSampler);
+	Direct3D::pContext->PSSetSamplers(1, 1, &pShadowSampler);
+	SAFE_RELEASE(pShadowSampler); // ƒRƒ“ƒeƒLƒXƒg‚ªQÆ‚ğ•Û‚·‚é‚Ì‚Å‚±‚±‚Å‰ğ•úOK
 }
 
 void Stage::Update()
 {
     transform_.rotate_.y += 0.5f;
 
-    // ========== ç‚¹å…‰æºã®æ“ä½œï¼ˆæ—¢å­˜ï¼‰ ==========
+    // ========== “_ŒõŒ¹‚Ì‘€ìiŠù‘¶j ==========
     if (Input::IsKey(DIK_A))
     {
         XMFLOAT4 p = Direct3D::GetLightPos();
@@ -110,12 +129,18 @@ void Stage::Update()
 
 
 
-    // ã‚³ãƒ³ã‚¹ã‚¿ãƒ³ãƒˆãƒãƒƒãƒ•ã‚¡ã®è¨­å®šã¨ã€ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã¸ã®ã‚³ãƒ³ã‚¹ã‚¿ãƒ³ãƒˆãƒãƒƒãƒ•ã‚¡ã®ã‚»ãƒƒãƒˆ
+    // ƒRƒ“ƒXƒ^ƒ“ƒgƒoƒbƒtƒ@‚Ìİ’è‚ÆAƒVƒF[ƒ_[‚Ö‚ÌƒRƒ“ƒXƒ^ƒ“ƒgƒoƒbƒtƒ@‚ÌƒZƒbƒg
     CONSTANTBUFFER_STAGE cb;
     cb.lightPosition = Direct3D::GetLightPos();
     XMStoreFloat4(&cb.eyePosition, Camera::GetPosition());
     cb.lightType = lightType_;
     cb._pad = { 0,0,0 };
+
+    // ƒ‰ƒCƒg‹“_‚Ì VP s—ñ‚ğŒvZ‚µ‚Ä‘—M
+    XMMATRIX lightV  = Direct3D::GetLightViewMatrix();
+    XMMATRIX lightP  = Direct3D::GetLightProjectionMatrix();
+    XMMATRIX lightVP = lightV * lightP;
+    XMStoreFloat4x4(&cb.matLightVP, lightVP); // row_major w’è‚È‚Ì‚Å“]’u•s—v
 
 
     D3D11_MAPPED_SUBRESOURCE pdata;
@@ -123,34 +148,64 @@ void Stage::Update()
     memcpy_s(pdata.pData, pdata.RowPitch, (void*)(&cb), sizeof(cb));
     Direct3D::pContext->Unmap(pConstantBuffer_, 0);
 
-    // ã‚³ãƒ³ã‚¹ã‚¿ãƒ³ãƒˆãƒãƒƒãƒ•ã‚¡
-    Direct3D::pContext->VSSetConstantBuffers(1, 1, &pConstantBuffer_);  // é ‚ç‚¹ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ç”¨
-    Direct3D::pContext->PSSetConstantBuffers(1, 1, &pConstantBuffer_);  // ãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ç”¨
+    // ƒRƒ“ƒXƒ^ƒ“ƒgƒoƒbƒtƒ@
+    Direct3D::pContext->VSSetConstantBuffers(1, 1, &pConstantBuffer_);  // ’¸“_ƒVƒF[ƒ_[—p
+    Direct3D::pContext->PSSetConstantBuffers(1, 1, &pConstantBuffer_);  // ƒsƒNƒZƒ‹ƒVƒF[ƒ_[—p
 }
 
 void Stage::Draw()
 {
-    Transform ltr;
-    ltr.position_ = { Direct3D::GetLightPos().x, Direct3D::GetLightPos().y, Direct3D::GetLightPos().z };
-    ltr.scale_ = { 0.1, 0.1, 0.1 };
-    Model::SetTransform(hball_, ltr);
-    Model::Draw(hball_);
+    // ========================================
+    // ƒpƒX1FƒVƒƒƒhƒEƒpƒX
+    // ƒ‰ƒCƒg‹“_‚ÅƒV[ƒ“‚ğ•`‰æ‚µ‚Ä[“xƒeƒNƒXƒ`ƒƒiƒVƒƒƒhƒEƒ}ƒbƒvj‚ğì‚é
+    // ‚±‚Ì“_‚Å‚Í‰æ–Ê‚É‚Í‰½‚à•\¦‚³‚ê‚È‚¢
+    // ========================================
+    Direct3D::BeginShadowPass();
+
+    // „Ÿ„Ÿ ƒVƒƒƒhƒEƒLƒƒƒXƒ^[i‰e‚ğ—‚Æ‚·ƒIƒuƒWƒFƒNƒgj‚Ì‚İ‚±‚±‚Å•`‚­ „Ÿ„Ÿ
+    // •”‰®‚ÍƒŒƒV[ƒo[i‰e‚ğó‚¯‚é‘¤j‚È‚Ì‚ÅƒVƒƒƒhƒEƒpƒX‚É‚ÍŠÜ‚ß‚È‚¢
+    // ——RF•”‰®‚ğ‚±‚±‚É“ü‚ê‚é‚ÆŠO•Ç‚ªƒ‰ƒCƒg‚ğÕ‚èAº“à‚ª‘S‚Ä‰e‚É‚È‚é
+    static Transform tDonut;
+    tDonut.scale_    = { 0.2f, 0.2f, 0.2f };
+    tDonut.position_ = { 0, 0.5f, 0.0f };
+    tDonut.rotate_.y += 0.1f;
+    Model::SetTransform(hDonut_, tDonut);
+    Model::DrawShadow(hDonut_);
 
     Transform tr;
     tr.position_ = { 0, 0, 0 };
-    tr.rotate_ = { 0, 180, 0 };
+    tr.rotate_   = { 0, 180, 0 };
+    // Model::DrawShadow(hRoom_);  // ƒŒƒV[ƒo[‚Ì‚İEƒLƒƒƒXƒ^[‚Å‚Í‚È‚¢
+
+    Direct3D::EndShadowPass();
+
+    // ========================================
+    // ƒpƒX2FƒƒCƒ“ƒpƒXi’Êí•`‰æj
+    // ƒJƒƒ‰‹“_‚ÅƒV[ƒ“‚ğ•`‰æ‚·‚éi‚Ü‚¾‰e‚Ío‚È‚¢ ¨ Step5 ‚Å’Ç‰Áj
+    // ========================================
+
+    // ƒVƒƒƒhƒEƒ}ƒbƒv SRV ‚ğƒsƒNƒZƒ‹ƒVƒF[ƒ_[‚ÌƒXƒƒbƒg t1 ‚ÉƒZƒbƒg
+    ID3D11ShaderResourceView* pShadowSRV = Direct3D::GetShadowMapSRV();
+    Direct3D::pContext->PSSetShaderResources(1, 1, &pShadowSRV);
+
+    // ƒ‰ƒCƒg‚ÌˆÊ’u‚ğ¦‚·¬‚³‚Èƒ{[ƒ‹iƒpƒX2 ‚Ì‚İE‰e‚Í•s—vj
+    Transform ltr;
+    ltr.position_ = { Direct3D::GetLightPos().x, Direct3D::GetLightPos().y, Direct3D::GetLightPos().z };
+    ltr.scale_ = { 0.1f, 0.1f, 0.1f };
+    Model::SetTransform(hball_, ltr);
+    Model::Draw(hball_);
 
     Model::SetTransform(hRoom_, tr);
     Model::Draw(hRoom_);
 
-    static Transform tDonut;
-    tDonut.scale_ = { 0.2, 0.2, 0.2 };
-    tDonut.position_ = { 0, 0.5, 0.0 };
-    tDonut.rotate_.y += 0.1;
     Model::SetTransform(hDonut_, tDonut);
     Model::Draw(hDonut_);
 
-    // ========== ImGui ã§ãƒ©ã‚¤ãƒˆæƒ…å ±ã‚’è¡¨ç¤º =========
+    // SRV ‚ğ‰ğœ‚·‚éiŸƒtƒŒ[ƒ€‚ÌƒpƒX1‚Å DSV ‚Æ SRV ‚ª“¯ƒoƒCƒ“ƒh‚³‚ê‚é‚Ì‚ğ–h‚®j
+    ID3D11ShaderResourceView* nullSRV = nullptr;
+    Direct3D::pContext->PSSetShaderResources(1, 1, &nullSRV);
+
+    // ========== ImGui ‚Åƒ‰ƒCƒgî•ñ‚ğ•\¦ =========
     ImGui::Text("Stage Class rot: %lf", tDonut.rotate_.z);
 
     ImGui::Separator();
@@ -180,7 +235,7 @@ void Stage::Draw()
 
     ImGui::Separator();
 
-    // ========== Step1 ãƒ‡ãƒãƒƒã‚°ï¼šãƒ©ã‚¤ãƒˆè¡Œåˆ—ã‚’è¡¨ç¤º ==========
+    // ========== Step1 ƒfƒoƒbƒOFƒ‰ƒCƒgs—ñ‚ğ•\¦ ==========
     if (ImGui::CollapsingHeader("Light Matrix Debug"))
     {
         XMMATRIX V  = Direct3D::GetLightViewMatrix();
@@ -193,7 +248,12 @@ void Stage::Draw()
         ImGui::Text("[2]: %.2f %.2f %.2f %.2f", V.r[2].m128_f32[0], V.r[2].m128_f32[1], V.r[2].m128_f32[2], V.r[2].m128_f32[3]);
         ImGui::Text("[3]: %.2f %.2f %.2f %.2f", V.r[3].m128_f32[0], V.r[3].m128_f32[1], V.r[3].m128_f32[2], V.r[3].m128_f32[3]);
     }
-    // ========== Step1 ãƒ‡ãƒãƒƒã‚° END ==========
+    // ========== Step1 ƒfƒoƒbƒO END ==========
+
+    // ========== Step2 ƒfƒoƒbƒOFƒVƒƒƒhƒEƒ}ƒbƒv‚Ì¶¬Šm”F ==========
+    ImGui::Text("ShadowMap SRV: %s",
+        Direct3D::GetShadowMapSRV() != nullptr ? "OK" : "null");
+    // ===============================================================
 
 }
 void Stage::Release()

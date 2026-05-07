@@ -1,4 +1,4 @@
-# Step 1 ── ライト視点の行列を計算する
+﻿# Step 1 ── ライト視点の行列を計算する
 
 ## 学習目標
 
@@ -25,6 +25,21 @@ matLightVP = matLightView × matLightProjection
                 ↑                  ↑
           ライトの位置・向き    平行光源 = 正射影（遠近なし）
 ```
+
+### lightPosition の方向ベクトル規約
+
+このプロジェクトでは `lightPosition` を **「サーフェスから光源へ向かう方向」** として扱います。  
+diffuse の `L = normalize(lightPosition)` と同じ規約です。
+
+```
+lightPosition = (0.5, -1, 0.7)
+      ↓
+「この方向に光源がある」
+      ↓
+lightEye = normalize(lightPosition) * 10  ← 光源方向に仮想カメラを置く
+```
+
+> ⚠️ **negation 不要**：`-lightDir` にしてしまうと光源が逆方向に置かれ、影が逆側に出ます。
 
 ### 平行光源では「正射影」を使う理由
 
@@ -70,8 +85,8 @@ DirectX::XMMATRIX GetLightProjectionMatrix(); // ライトの正射影行列
 
 ```cpp
 // ライトのビュー行列を返す
-// ・lightPosition を「光が来る方向」として、逆方向に仮想的な光源位置を置く
-// ・注視点はシーンの中心（0, 0, 0）
+// lightPosition は「サーフェスから光源へ向かう方向ベクトル」（diffuse の L と同じ規約）
+// lightEye は lightPosition 方向に置く（negation 不要）
 DirectX::XMMATRIX Direct3D::GetLightViewMatrix()
 {
     // lightPosition は「光の方向ベクトル」なので、
@@ -81,18 +96,23 @@ DirectX::XMMATRIX Direct3D::GetLightViewMatrix()
     XMVECTOR lightAt  = XMVectorSet(0, 0, 0, 0);               // 注視点：シーンの中心
     XMVECTOR lightUp  = XMVectorSet(0, 1, 0, 0);               // 上方向
 
+    // lightDir が Y 軸に平行なとき LookAt が破綻するので up を Z 軸に切り替える
+    XMVECTOR upY = XMVectorSet(0, 1, 0, 0);
+    float dotY   = fabsf(XMVectorGetX(XMVector3Dot(lightDir, upY)));
+    XMVECTOR lightUp = (dotY > 0.99f) ? XMVectorSet(0, 0, 1, 0) : upY;
+
     return XMMatrixLookAtLH(lightEye, lightAt, lightUp);
 }
 
 // ライトの正射影行列を返す
-// ・平行光源なので XMMatrixOrthographicLH（透視投影ではない）
-// ・幅・高さはシーン全体をカバーできるサイズに設定する
+// 平行光源なので XMMatrixOrthographicLH（透視投影ではない）
+// width/height は部屋サイズに合わせて設定する（大きすぎると影が粗くなる）
 DirectX::XMMATRIX Direct3D::GetLightProjectionMatrix()
 {
-    float width  = 20.0f; // シーンをカバーする幅
-    float height = 20.0f; // シーンをカバーする高さ
-    float nearZ  =  1.0f; // 近クリップ面
-    float farZ   = 50.0f; // 遠クリップ面
+    float width  =  5.0f; // 部屋サイズに合わせた値（20 より小さい方が影が細かい）
+    float height =  5.0f;
+    float nearZ  =  1.0f;
+    float farZ   = 50.0f;
 
     return XMMatrixOrthographicLH(width, height, nearZ, farZ);
 }
@@ -102,10 +122,9 @@ DirectX::XMMATRIX Direct3D::GetLightProjectionMatrix()
 
 ### 変更ファイル：`Stage.cpp`
 
-`Stage::Draw()` の ImGui 表示部分に、行列の内容をデバッグ表示するコードを追加します。
+`Stage::Draw()` の ImGui 表示部分に行列デバッグ表示を追加します。
 
 ```cpp
-// ========== Step1 デバッグ：ライト行列を表示 ==========
 if (ImGui::CollapsingHeader("Light Matrix Debug"))
 {
     XMMATRIX V = Direct3D::GetLightViewMatrix();
@@ -121,7 +140,6 @@ if (ImGui::CollapsingHeader("Light Matrix Debug"))
     ImGui::Text("LightView\\\[3]: %.2f %.2f %.2f %.2f",
         V.r\\\[3].m128\\\_f32\\\[0], V.r\\\[3].m128\\\_f32\\\[1], V.r\\\[3].m128\\\_f32\\\[2], V.r\\\[3].m128\\\_f32\\\[3]);
 }
-// ========== Step1 デバッグ END ==========
 ```
 
 \---

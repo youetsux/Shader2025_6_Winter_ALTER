@@ -11,6 +11,7 @@ Fbx::Fbx()
 	: pVertexBuffer_(nullptr)
 	, pIndexBuffer_(nullptr)
 	, pConstantBuffer_(nullptr)
+	, pShadowConstantBuffer_(nullptr)
 	, vertexCount_(0)
 	, polygonCount_(0)
 	, materialCount_(0)
@@ -334,6 +335,45 @@ void Fbx::DrawToon(Transform& transform)
 	Direct3D::SetShader(SHADER_3D);
 }
 
+void Fbx::DrawShadow(Transform& transform)
+{
+	// シャドウ専用シェーダーは BeginShadowPass() で既にセット済み
+
+	transform.Calculation();
+
+	// 頂点バッファをセット
+	UINT stride = sizeof(VERTEX);
+	UINT offset = 0;
+	Direct3D::pContext->IASetVertexBuffers(0, 1, &pVertexBuffer_, &stride, &offset);
+
+	// ライト視点の WVP 行列を計算
+	XMMATRIX matWorld    = transform.GetWorldMatrix();
+	XMMATRIX matLightV   = Direct3D::GetLightViewMatrix();
+	XMMATRIX matLightP   = Direct3D::GetLightProjectionMatrix();
+	XMMATRIX matLightWVP = matWorld * matLightV * matLightP;
+
+	// コンスタントバッファに書き込む
+	CB_SHADOW cb;
+	cb.matLightWVP = matLightWVP;
+
+	D3D11_MAPPED_SUBRESOURCE pdata;
+	Direct3D::pContext->Map(pShadowConstantBuffer_, 0, D3D11_MAP_WRITE_DISCARD, 0, &pdata);
+	memcpy_s(pdata.pData, pdata.RowPitch, (void*)(&cb), sizeof(cb));
+	Direct3D::pContext->Unmap(pShadowConstantBuffer_, 0);
+
+	// 頂点シェーダーのスロット b0 にセット
+	Direct3D::pContext->VSSetConstantBuffers(0, 1, &pShadowConstantBuffer_);
+
+	// マテリアルごとに描画（色・テクスチャは不要、深度だけ書く）
+	for (int i = 0; i < materialCount_; i++)
+	{
+		stride = sizeof(int);
+		offset = 0;
+		Direct3D::pContext->IASetIndexBuffer(pIndexBuffer_[i], DXGI_FORMAT_R32_UINT, 0);
+		Direct3D::pContext->DrawIndexed(indexCount_[i], 0, 0);
+	}
+}
+
 void Fbx::Release()
 {
 }
@@ -595,6 +635,21 @@ void Fbx::InitConstantBuffer()
 	if (FAILED(hr))
 	{
 		MessageBox(NULL, L"コンスタントバッファの作成に失敗しました", L"エラー", MB_OK);
+	}
+
+	// シャドウマップ用コンスタントバッファ
+	D3D11_BUFFER_DESC cbShadow;
+	cbShadow.ByteWidth           = sizeof(CB_SHADOW);
+	cbShadow.Usage               = D3D11_USAGE_DYNAMIC;
+	cbShadow.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+	cbShadow.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+	cbShadow.MiscFlags           = 0;
+	cbShadow.StructureByteStride = 0;
+
+	hr = Direct3D::pDevice->CreateBuffer(&cbShadow, nullptr, &pShadowConstantBuffer_);
+	if (FAILED(hr))
+	{
+		MessageBox(NULL, L"シャドウ用コンスタントバッファの作成に失敗しました", L"エラー", MB_OK);
 	}
 }
 

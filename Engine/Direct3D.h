@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <DirectXMath.h>
 
-//ãƒªãƒ³ã‚«
+//ƒŠƒ“ƒJ
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
@@ -13,45 +13,54 @@
 
 enum SHADER_TYPE
 {
-	SHADER_3D,	//3Dç”¨ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼
-	SHADER_2D,	//2Dç”¨ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼
-	SHADER_NORMALMAP, //æ³•ç·šãƒžãƒƒãƒ—ç”¨ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼
-	SHADER_TOON, //ãƒˆã‚¥ãƒ¼ãƒ³ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼
-	SHADER_MAX //ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã®æœ€å¤§æ•°
+	SHADER_3D,	//3D—pƒVƒF[ƒ_[
+	SHADER_2D,	//2D—pƒVƒF[ƒ_[
+	SHADER_NORMALMAP, //–@üƒ}ƒbƒv—pƒVƒF[ƒ_[
+	SHADER_TOON, //ƒgƒD[ƒ“ƒVƒF[ƒ_[
+	SHADER_SHADOWMAP, //ƒVƒƒƒhƒEƒ}ƒbƒv¶¬—p
+	SHADER_MAX //ƒVƒF[ƒ_[‚ÌÅ‘å”
 };
 
 namespace Direct3D
 {
-	//externã¯ã©ã“ã‹ã«å®Ÿéš›ã®å®šç¾©ï¼ˆå®£è¨€ï¼‰æ–‡ã‚ã‚‹ãžã£ã¦å®£è¨€
+	//extern‚Í‚Ç‚±‚©‚ÉŽÀÛ‚Ì’è‹`iéŒ¾j•¶‚ ‚é‚¼‚Á‚ÄéŒ¾
 	extern ID3D11Device* pDevice;
 	extern ID3D11DeviceContext* pContext;
-	//ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼æº–å‚™
-	HRESULT InitShader(); //å…¨ã¦ã®ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼åˆæœŸåŒ–
-	//â†‘ä»¥ä¸‹ã‚’åˆæœŸåŒ–
-	HRESULT InitShader3D();//3Dç”¨ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼åˆæœŸåŒ–
-	HRESULT InitShader2D();//2Dç”¨ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼åˆæœŸåŒ–
-	HRESULT InitNormalShader(); //æ³•ç·šãƒžãƒƒãƒ—ç”¨ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼åˆæœŸåŒ–
-	HRESULT InitToonShader(); //ãƒˆã‚¥ãƒ¼ãƒ³ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼åˆæœŸåŒ–
+	//ƒVƒF[ƒ_[€”õ
+	HRESULT InitShader(); //‘S‚Ä‚ÌƒVƒF[ƒ_[‰Šú‰»
+	//ªˆÈ‰º‚ð‰Šú‰»
+	HRESULT InitShader3D();//3D—pƒVƒF[ƒ_[‰Šú‰»
+	HRESULT InitShader2D();//2D—pƒVƒF[ƒ_[‰Šú‰»
+	HRESULT InitNormalShader(); //–@üƒ}ƒbƒv—pƒVƒF[ƒ_[‰Šú‰»
+	HRESULT InitToonShader(); //ƒgƒD[ƒ“ƒVƒF[ƒ_[‰Šú‰»
+	HRESULT InitShadowShader(); //ƒVƒƒƒhƒEƒ}ƒbƒv—pƒVƒF[ƒ_[‰Šú‰»
 
-	void SetShader(SHADER_TYPE type); //ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã‚’ã‚»ãƒƒãƒˆ
+	void SetShader(SHADER_TYPE type); //ƒVƒF[ƒ_[‚ðƒZƒbƒg
 
 
-	//åˆæœŸåŒ–
+	//‰Šú‰»
 	HRESULT Initialize(int winW, int winH, HWND hWnd);
 
-	//æç”»é–‹å§‹
+	//•`‰æŠJŽn
 	void BeginDraw();
 
-	//æç”»çµ‚äº†
+	//•`‰æI—¹
 	void EndDraw();
 
-	//è§£æ”¾
+	//‰ð•ú
 	void Release();
 
-	DirectX::XMFLOAT4 GetLightPos(); //ãƒ©ã‚¤ãƒˆã®ä½ç½®
-	void SetLightPos(DirectX::XMFLOAT4 pos); //ãƒ©ã‚¤ãƒˆã®ä½ç½®è¨­å®š
+	DirectX::XMFLOAT4 GetLightPos(); //ƒ‰ƒCƒg‚ÌˆÊ’u
+	void SetLightPos(DirectX::XMFLOAT4 pos); //ƒ‰ƒCƒg‚ÌˆÊ’uÝ’è
 
-	// ã‚·ãƒ£ãƒ‰ã‚¦ãƒžãƒƒãƒ—ç”¨ï¼šãƒ©ã‚¤ãƒˆè¦–ç‚¹ã®è¡Œåˆ—
-	DirectX::XMMATRIX GetLightViewMatrix();       // ãƒ©ã‚¤ãƒˆã®ãƒ“ãƒ¥ãƒ¼è¡Œåˆ—
-	DirectX::XMMATRIX GetLightProjectionMatrix(); // ãƒ©ã‚¤ãƒˆã®æ­£å°„å½±è¡Œåˆ—
+	// ƒVƒƒƒhƒEƒ}ƒbƒv—pFƒ‰ƒCƒgŽ‹“_‚Ìs—ñ
+	DirectX::XMMATRIX GetLightViewMatrix();       // ƒ‰ƒCƒg‚Ìƒrƒ…[s—ñ
+	DirectX::XMMATRIX GetLightProjectionMatrix(); // ƒ‰ƒCƒg‚Ì³ŽË‰es—ñ
+
+	// ƒVƒƒƒhƒEƒ}ƒbƒv—pƒŠƒ\[ƒX
+	HRESULT InitShadowMap(int width, int height); // ƒVƒƒƒhƒEƒ}ƒbƒv‚Ì‰Šú‰»
+	ID3D11ShaderResourceView* GetShadowMapSRV();  // ƒVƒF[ƒ_[‚Å“Ç‚ÞŒû‚ðŽæ“¾
+
+	void BeginShadowPass();  // ƒVƒƒƒhƒE—pƒŒƒ“ƒ_[ƒ^[ƒQƒbƒg‚ÉØ‚è‘Ö‚¦‚é
+	void EndShadowPass();    // ’Êí‚ÌƒŒƒ“ƒ_[ƒ^[ƒQƒbƒg‚É–ß‚·
 };

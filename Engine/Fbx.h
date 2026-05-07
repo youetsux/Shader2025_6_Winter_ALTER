@@ -38,6 +38,7 @@ public:
 	void    Draw(Transform& transform); //simple3D.hlslで描画する関数
 	void	DrawNormalMapped(Transform& transform);  // ← ノーマルマップ描画を追加
 	void	DrawToon(Transform& transform); // ← トゥーンシェーダー描画を追加
+	void	DrawShadow(Transform& transform); // ← シャドウマップ生成用
 	void    Release();
 
 	void InitVertex(FbxMesh* mesh);
@@ -71,6 +72,12 @@ private:
 		BOOL		materialFlag; //マテリアルがあるかないか
 	};
 
+	// シャドウマップ生成用コンスタントバッファ（matLightWVP だけ持てばよい）
+	struct CB_SHADOW
+	{
+		XMMATRIX matLightWVP; // ライト視点の World × View × Projection
+	};
+
 	struct VERTEX
 	{
 		XMVECTOR position;
@@ -84,6 +91,7 @@ private:
 	ID3D11Buffer* pVertexBuffer_;
 	ID3D11Buffer** pIndexBuffer_;
 	ID3D11Buffer* pConstantBuffer_;
+	ID3D11Buffer* pShadowConstantBuffer_; // シャドウ用CB
 	std::vector<MATERIAL> pMaterialList_;
 	std::vector<int> indexCount_;//マテリアルごとのインデックス数
 

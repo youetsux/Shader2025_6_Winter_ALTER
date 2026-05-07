@@ -195,6 +195,7 @@
     <FxCompile Include="Simple2D.hlsl" />
     <FxCompile Include="NormalShader.hlsl" />
     <FxCompile Include="toonShader.hlsl" />
+    <FxCompile Include="ShadowMap.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
