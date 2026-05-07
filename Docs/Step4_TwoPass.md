@@ -324,7 +324,39 @@ void Model::DrawShadow(int hModel)
 
 ---
 
-## チェックポイント D：Stage::Draw() を2パス構造に変更
+## チェックポイント D：Stage::Initialize() と Stage::Draw() に変更を加える
+
+### D-1. `Stage::Initialize()` に比較サンプラーを追加
+
+`Stage::Initialize()` の末尾（モデルロードやカメラ設定の後）に追記します。
+
+```cpp
+// 比較サンプラー（シャドウマップ用）を作成してスロット s1 にセット
+D3D11_SAMPLER_DESC sampDesc = {};
+sampDesc.Filter         = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+sampDesc.AddressU       = D3D11_TEXTURE_ADDRESS_BORDER;
+sampDesc.AddressV       = D3D11_TEXTURE_ADDRESS_BORDER;
+sampDesc.AddressW       = D3D11_TEXTURE_ADDRESS_BORDER;
+sampDesc.BorderColor[0] = 1.0f; // 範囲外は「影なし」扱い
+sampDesc.BorderColor[1] = 1.0f;
+sampDesc.BorderColor[2] = 1.0f;
+sampDesc.BorderColor[3] = 1.0f;
+sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+sampDesc.MinLOD         = 0;
+sampDesc.MaxLOD         = D3D11_FLOAT32_MAX;
+
+ID3D11SamplerState* pShadowSampler = nullptr;
+Direct3D::pDevice->CreateSamplerState(&sampDesc, &pShadowSampler);
+Direct3D::pContext->PSSetSamplers(1, 1, &pShadowSampler);
+SAFE_RELEASE(pShadowSampler); // コンテキストが参照を保持するのでここで解放OK
+```
+
+> **なぜ Initialize() に書くのか？**  
+> サンプラーは毎フレーム変わるものではないので、初期化時に1回だけ作ってセットすれば十分です。  
+> `D3D11_TEXTURE_ADDRESS_BORDER` + `BorderColor = 1.0` にすることで  
+> シャドウマップの UV 範囲外は「影なし（明るい）」として扱われます。
+
+### D-2. `Stage::Draw()` を2パス構造に変更
 
 `Stage::Draw()` の先頭（最初の `Transform ltr;` より前）に「パス1」のブロックを追加します。  
 **既存のコードは削除せず、前に挿入するイメージです。**
@@ -346,13 +378,15 @@ void Stage::Draw()
     tDonut.position_ = { 0, 0.5f, 0.0f };
     tDonut.rotate_.y += 0.1f;
     Model::SetTransform(hDonut_, tDonut);
-    Model::DrawShadow(hDonut_);
+    Model::DrawShadow(hDonut_); // シャドウキャスター（影を落とす側）
+
+    // hRoom_ はシャドウレシーバー（影を受ける側）なのでキャスターではない
+    // 部屋の内側からライトが遮られると全面影になるため、ここには含めない
+    // Model::DrawShadow(hRoom_); ← コメントアウトのまま
 
     Transform tr;
     tr.position_ = { 0, 0, 0 };
     tr.rotate_   = { 0, 180, 0 };
-    Model::SetTransform(hRoom_, tr);
-    Model::DrawShadow(hRoom_);
 
     Direct3D::EndShadowPass();
 

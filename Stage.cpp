@@ -205,55 +205,13 @@ void Stage::Draw()
     ID3D11ShaderResourceView* nullSRV = nullptr;
     Direct3D::pContext->PSSetShaderResources(1, 1, &nullSRV);
 
-    // ========== ImGui でライト情報を表示 =========
-    ImGui::Text("Stage Class rot: %lf", tDonut.rotate_.z);
-
-    ImGui::Separator();
-    ImGui::Text("=== Light Type ===");
+    // ========== ImGui ==========
     if (ImGui::Button("Directional")) { lightType_ = 0; }
     ImGui::SameLine();
     if (ImGui::Button("Point")) { lightType_ = 1; }
-    ImGui::SameLine();
-    ImGui::Text("Current: %s", lightType_ == 0 ? "Directional" : "Point");
 
-    ImGui::Separator();
-    ImGui::Text("=== Light Information ===");
-
-    XMFLOAT4 pointLight = Direct3D::GetLightPos();
-    if (lightType_ == 1)
-    {
-        ImGui::Text("Point Light Position:");
-        ImGui::Text("  X: %.2f, Y: %.2f, Z: %.2f", pointLight.x, pointLight.y, pointLight.z);
-        ImGui::Text("  Control: WASD + Up/Down");
-    }
-    else
-    {
-        ImGui::Text("Directional Light Direction:");
-        ImGui::Text("  X: %.2f, Y: %.2f, Z: %.2f", pointLight.x, pointLight.y, pointLight.z);
-        ImGui::Text("  Control: WASD + Up/Down");
-    }
-
-    ImGui::Separator();
-
-    // ========== Step1 デバッグ：ライト行列を表示 ==========
-    if (ImGui::CollapsingHeader("Light Matrix Debug"))
-    {
-        XMMATRIX V  = Direct3D::GetLightViewMatrix();
-        XMMATRIX P  = Direct3D::GetLightProjectionMatrix();
-        XMMATRIX VP = V * P;
-
-        ImGui::Text("-- LightView --");
-        ImGui::Text("[0]: %.2f %.2f %.2f %.2f", V.r[0].m128_f32[0], V.r[0].m128_f32[1], V.r[0].m128_f32[2], V.r[0].m128_f32[3]);
-        ImGui::Text("[1]: %.2f %.2f %.2f %.2f", V.r[1].m128_f32[0], V.r[1].m128_f32[1], V.r[1].m128_f32[2], V.r[1].m128_f32[3]);
-        ImGui::Text("[2]: %.2f %.2f %.2f %.2f", V.r[2].m128_f32[0], V.r[2].m128_f32[1], V.r[2].m128_f32[2], V.r[2].m128_f32[3]);
-        ImGui::Text("[3]: %.2f %.2f %.2f %.2f", V.r[3].m128_f32[0], V.r[3].m128_f32[1], V.r[3].m128_f32[2], V.r[3].m128_f32[3]);
-    }
-    // ========== Step1 デバッグ END ==========
-
-    // ========== Step2 デバッグ：シャドウマップの生成確認 ==========
-    ImGui::Text("ShadowMap SRV: %s",
-        Direct3D::GetShadowMapSRV() != nullptr ? "OK" : "null");
-    // ===============================================================
+    XMFLOAT4 lightPos = Direct3D::GetLightPos();
+    ImGui::Text("Light: %.2f, %.2f, %.2f  [WASD+UD]", lightPos.x, lightPos.y, lightPos.z);
 
 }
 void Stage::Release()

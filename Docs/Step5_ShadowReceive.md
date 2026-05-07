@@ -135,27 +135,10 @@ ID3D11ShaderResourceView* nullSRV = nullptr;
 Direct3D::pContext->PSSetShaderResources(1, 1, &nullSRV);
 ```
 
-### `Stage.cpp Initialize()`：比較サンプラーを作成
+### `Stage.cpp Initialize()`：比較サンプラーは Step4-D で追加済み
 
-```cpp
-D3D11_SAMPLER_DESC sampDesc = {};
-sampDesc.Filter         = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
-sampDesc.AddressU       = D3D11_TEXTURE_ADDRESS_BORDER;
-sampDesc.AddressV       = D3D11_TEXTURE_ADDRESS_BORDER;
-sampDesc.AddressW       = D3D11_TEXTURE_ADDRESS_BORDER;
-sampDesc.BorderColor[0] = 1.0f;  // 範囲外は「影なし」扱い
-sampDesc.BorderColor[1] = 1.0f;
-sampDesc.BorderColor[2] = 1.0f;
-sampDesc.BorderColor[3] = 1.0f;
-sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
-sampDesc.MinLOD         = 0;
-sampDesc.MaxLOD         = D3D11_FLOAT32_MAX;
-
-ID3D11SamplerState* pShadowSampler = nullptr;
-Direct3D::pDevice->CreateSamplerState(&sampDesc, &pShadowSampler);
-Direct3D::pContext->PSSetSamplers(1, 1, &pShadowSampler);
-SAFE_RELEASE(pShadowSampler);
-```
+比較サンプラーの作成・セットは **Step4-D** で `Stage::Initialize()` に追加しました。  
+Step5 での追加作業はありません。
 
 ### `Simple3D.hlsl`：シャドウマップ・比較サンプラー宣言と影判定追加
 
@@ -186,17 +169,30 @@ if (shadowUV.x >= 0.0 && shadowUV.x <= 1.0 &&
 color *= (0.3 + 0.7 * shadow);  // 影の中は 30% の明るさを残す
 ```
 
-### `Engine/Direct3D.cpp`：GetLightViewMatrix・シャドウシェーダー・フラスタム修正
+### `Engine/Direct3D.cpp`：GetLightViewMatrix・シャドウシェーダー・フラスタムの修正
+
+これらは Step4 で一度動かしてみた結果、**影が出なかった原因**として Step5 で修正した箇所です。
+
+#### ① GetLightViewMatrix の lightEye 方向
 
 ```cpp
-// GetLightViewMatrix（lightEye は +lightDir 方向）
-XMVECTOR lightEye = lightDir * 10.0f;  // negation 不要
+// ✅ 正しい：lightDir は「光が来る方向」= 光源位置の方向
+XMVECTOR lightEye = lightDir * 10.0f;
 
-// InitShadowShader のラスタライザー
-rdc.CullMode = D3D11_CULL_NONE;  // CULL_FRONT だと背面深度が書き込まれ誤判定
+// ❌ 誤り（Step4 時点の最初の実装）：逆向きなので影が出ない
+// XMVECTOR lightEye = -XMVector3Normalize(lightDir) * 10.0f;
+```
 
-// GetLightProjectionMatrix のフラスタム
-float width  = 5.0f;  // 部屋サイズに合わせて縮小
+#### ② InitShadowShader のラスタライザー
+
+```cpp
+rdc.CullMode = D3D11_CULL_NONE;  // CULL_FRONT だと背面深度が書き込まれ床との差が消える
+```
+
+#### ③ GetLightProjectionMatrix のフラスタム
+
+```cpp
+float width  = 5.0f;  // 元 20.0f → 範囲を絞って影の解像度を上げる
 float height = 5.0f;
 ```
 

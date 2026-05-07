@@ -1,71 +1,69 @@
-﻿# 進捗記録
+# 進捗記録
 
-## 現在の状況
+## 現在の状態
 
-**Step5 完了**
+**Step5 完了・コミット済み（`04f5ccd`）**
 
 ---
 
 ## 完了済み
 
-### 準備作業
-- `Simple3D.hlsl` をノーマル3Dシェーダーに戻した
+### 事前準備（`8eee953`）
+- `lightType_ = 0`（デフォルト：平行光源）
+- ライト初期値を方向ベクトル `{ 0.5f, -1.0f, 0.7f, 0.0f }` に変更
 - ImGui に平行光源 / 点光源の切り替えボタンを追加
-- デフォルトを**平行光源**に変更（`lightType_ = 0`）
-- `Direct3D.cpp` のライト初期値を方向ベクトルらしい値に変更（`{ 0.5f, -1.0f, 0.7f, 0.0f }`）
 
-### Step1：ライト視点の行列を計算する [完了]
-- `Engine/Direct3D.h` に `GetLightViewMatrix()` / `GetLightProjectionMatrix()` を追加
-- `Engine/Direct3D.cpp` に上記2関数を実装
-- `Stage.cpp` の ImGui に「Light Matrix Debug」折りたたみ表示を追加
+### Step1：ライト視点の行列を計算する ✅（`0bf7ab5`）
+- `Direct3D` に `GetLightViewMatrix()` / `GetLightProjectionMatrix()` を追加
+- `Stage::Draw()` の ImGui に「Light Matrix Debug」折りたたみ表示を追加
 
-### Step2：シャドウマップ用テクスチャを作成する [完了]
-- `Engine/Direct3D.h` / `cpp` に `InitShadowMap()` / `GetShadowMapSRV()` を実装
-- `Stage.cpp` の ImGui に「ShadowMap SRV: OK/null」確認表示を追加
+### Step2：シャドウマップ用テクスチャを作成する ✅（`a83312b` に含む）
+- `Direct3D` に `InitShadowMap()` / `GetShadowMapSRV()` を追加
+- `namespace Direct3D` に `pShadowMapTexture` / `pShadowMapDSV` / `pShadowMapSRV` を追加
+- `Initialize()` 内で `InitShadowMap(1024, 1024)` を呼ぶ
+- `Release()` に `SAFE_RELEASE` を追加
 
-### Step3：シャドウ用シェーダーを作成する [完了]
+### Step3：シャドウ用シェーダーを作成する ✅（`a83312b` に含む）
+- `SHADER_SHADOWMAP` を enum に追加
 - `ShadowMap.hlsl` を新規作成
-- `Engine/Direct3D` に `SHADER_SHADOWMAP` / `InitShadowShader()` を追加
+- `InitShadowShader()` を追加、`InitShader()` から呼ぶ
+- `BeginShadowPass()` / `EndShadowPass()` を追加
 
-### Step4：2パス描画を組み込む [完了]
-- `Engine/Direct3D` に `BeginShadowPass()` / `EndShadowPass()` を実装
-- `Engine/Fbx` に `DrawShadow()` を追加
-- `Engine/Model` に `DrawShadow()` を追加
-- `Stage.cpp` の `Draw()` を2パス構造に変更
-- 部屋はレシーバーのみ（シャドウパスには含めない）コメント整理
+### Step4：2パス描画を組み込む ✅（`a83312b`）
+- `Fbx` に `CB_SHADOW` / `pShadowConstantBuffer_` / `DrawShadow()` を追加
+- `Model` に `DrawShadow()` を追加
+- `Stage::Initialize()` に比較サンプラー作成を追加（`s1` スロット）
+- `Stage::Draw()` を2パス構造に変更（`hRoom_` はシャドウキャスターに含めない）
+- `CONSTANTBUFFER_STAGE` に `matLightVP` を追加
+- `Stage::Update()` で `matLightVP` を計算・送信
 
-### Step5：影の判定をシェーダーに追加する [完了]
-- `Stage.h`：`CONSTANTBUFFER_STAGE` に `matLightVP` を追加
-- `Stage.cpp Update()`：`matLightVP` を計算・送信
-- `Stage.cpp Draw()`：SRV をスロット `t1` にセット、パス2終了後に解除
-- `Stage.cpp Initialize()`：比較サンプラー（`LESS_EQUAL`）を作成
-- `Simple3D.hlsl`：シャドウマップ参照・`cbuffer` 追加・影判定ロジック追加
-- `Engine/Direct3D.cpp` 修正（Step5 デバッグ中に発覚した問題）：
-  - `GetLightViewMatrix()`：`lightEye = +lightDir * 10`（negation 不要・Y軸縮退バグ修正も）
-  - `InitShadowShader()`：`CULL_FRONT` → `CULL_NONE`（背面深度誤判定を修正）
-  - `GetLightProjectionMatrix()`：フラスタム `20x20` → `5x5`（影の解像度改善）
-  - バイアス `bias = 0.005`（シャドウアクネ抑制）
+### Step5：影の判定をシェーダーに追加する ✅（`04f5ccd`）
+- `Simple3D.hlsl` に `g_shadowMap` / `g_shadowSampler` 宣言追加
+- `cbuffer gStage` に `matLightVP` 追加
+- `PS()` に影判定コードを追加（`SampleCmpLevelZero` + bias）
+- `Stage::Draw()` に SRV のセット／解除を追加
+- `GetLightViewMatrix()` の `lightEye` 方向を修正（negation 不要）
+- `InitShadowShader()` のラスタライザーを `CULL_NONE` に修正
+- `GetLightProjectionMatrix()` のフラスタムを `5.0f` に縮小
 
 ---
 
 ## 次にやること
 
 ### Step6：デバッグ UI とパラメータ調整
-詳細は `Docs/Step6_Debug.md` を参照。
+詳細は [`Step6_Debug.md`](./Step6_Debug.md) を参照。
+
+主な変更：
+- `Stage` に `shadowBias_` / `lightOrthoSize_` / `showShadowMap_` メンバを追加
+- `GetLightProjectionMatrix(float orthoSize)` をオーバーロード
+- ImGui にバイアスと正射影サイズのスライダー、シャドウマップ可視化を追加
+- `HLSL` の固定 `bias` を `shadowBias` （CB 経由）に変更
 
 ---
 
 ## 再開方法
 
 1. Visual Studio で `MyFirstGame.sln` を開く
-2. このファイル（`Docs/progress.md`）で現在の進捗を確認する
-3. 該当 Step のドキュメントを開く
-4. GitHub Copilot に「Step6 を進めて」と指示する
-
----
-
-## 注意事項
-
-- **Step は1つずつ・ビルド確認・コミットの順で進める**
-- `lightPosition` の規約：**サーフェスから光源へ向かう方向ベクトル**（diffuse の L と同じ）
-- `lightEye = lightDir * 10.0f`（negation 不要）
+2. このファイルで現在の進捗を確認する
+3. 次のStepのドキュメントを開く
+4. GitHub Copilot に「Step6実装して」と指示する
