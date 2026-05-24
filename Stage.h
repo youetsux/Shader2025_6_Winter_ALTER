@@ -8,11 +8,10 @@ namespace
 }
 struct CONSTANTBUFFER_STAGE
 {
-	XMFLOAT4 lightPosition;      // 点光源の位置
-	XMFLOAT4 eyePosition;        // カメラ位置
-	XMFLOAT4 spotLightPosition;  // ← スポットライトの位置
-	XMFLOAT4 spotLightDirection; // ← スポットライトの方向
-	XMFLOAT4 spotLightParams;    // ← x:内側角度cos, y:外側角度cos, z:減衰, w:未使用
+	XMFLOAT4 lightPosition;  // 光源の位置 or 方向
+	XMFLOAT4 eyePosition;    // カメラ位置
+	int      lightType;      // 0=平行光源, 1=点光源
+	XMFLOAT3 _pad;           // 16バイトアライメント用パディング
 };
 
 class Stage :
@@ -30,6 +29,7 @@ private:
 	int hRoom_;
 	int hGround_;
 	int hDonut_;
+	int lightType_;              // 0=平行光源, 1=点光源
 	//Sprite* pMelbourne_;
 	ID3D11Buffer* pConstantBuffer_;
 	void InitConstantBuffer();
