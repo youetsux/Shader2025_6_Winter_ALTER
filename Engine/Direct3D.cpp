@@ -442,3 +442,32 @@ void Direct3D::SetLightPos(DirectX::XMFLOAT4 pos)
 {
 	lightPosition = pos;
 }
+
+XMMATRIX Direct3D::GetLightViewMatrix()
+{
+	// lightPosition はライト方向ベクトル（平行光源のため位置ではなく向き）
+	XMVECTOR lightDir = XMVector3Normalize(XMLoadFloat4(&lightPosition));
+
+	// ライト方向の延長線上（10倍先）に仮想カメラを置く
+	XMVECTOR lightEye = lightDir * 10.0f;
+
+	// 仮想カメラはシーンの原点（0,0,0）を見る
+	XMVECTOR lightAt = XMVectorSet(0, 0, 0, 0);
+
+	// 通常は「上方向 = Y軸」でよい
+	XMVECTOR upY = XMVectorSet(0, 1, 0, 0);
+	float dotY   = fabsf(XMVectorGetX(XMVector3Dot(lightDir, upY)));
+
+	// ライト方向がY軸とほぼ一致するとき（真上/真下）は up をZ軸に切り替える
+	XMVECTOR lightUp = (dotY > 0.99f) ? XMVectorSet(0, 0, 1, 0) : upY;
+
+	return XMMatrixLookAtLH(lightEye, lightAt, lightUp);
+}
+
+XMMATRIX Direct3D::GetLightProjectionMatrix()
+{
+	// 平行光源は遠近感がないので正射影（Orthographic）を使う
+	// width=5, height=5 : ライトが照らす範囲（ワールド単位）
+	// nearZ=1, farZ=50  : ライト視点の手前・奥のクリップ距離
+	return XMMatrixOrthographicLH(5.0f, 5.0f, 1.0f, 50.0f);
+}
