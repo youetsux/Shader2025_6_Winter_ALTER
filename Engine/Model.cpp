@@ -1,4 +1,4 @@
-﻿#include "Model.h"
+#include "Model.h"
 #include "Direct3D.h"
 
 namespace Model
@@ -47,6 +47,11 @@ void Model::Draw(int hModel)
 void Model::DrawNormalMapped(int hModel)
 {
 	modelList[hModel]->pfbx_->DrawNormalMapped(modelList[hModel]->transform_);
+}
+
+void Model::DrawShadow(int hModel)
+{
+	modelList[hModel]->pfbx_->DrawShadow(modelList[hModel]->transform_);
 }
 
 void Model::Release()

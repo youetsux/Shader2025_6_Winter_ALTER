@@ -8,14 +8,15 @@ namespace Model
 	struct ModelData
 	{
 		Fbx* pfbx_;
-		Transform transform_;//ƒgƒ‰ƒ“ƒXƒtƒH[ƒ€
+		Transform transform_;//ãƒˆãƒ©ãƒ³ã‚¹ãƒ•ã‚©ãƒ¼ãƒ 
 		std::string filename_;
 
 	};
 	int Load(std::string fileName);
 	void SetTransform(int hModel, Transform transform);
 	void Draw(int hModel);
-	void DrawNormalMapped(int hModel);  // © ’Ç‰Á
+	void DrawNormalMapped(int hModel);  // â† è¿½åŠ 
+	void DrawShadow(int hModel);        // â† ã‚·ãƒ£ãƒ‰ã‚¦ãƒãƒƒãƒ—ç”¨
 	void Release();
 
 	void RayCast(int hModel, RayCastData& rayData);

@@ -37,6 +37,7 @@ public:
 	HRESULT Load(std::string fileName);
 	void    Draw(Transform& transform);
 	void	DrawNormalMapped(Transform& transform);  // ← ノーマルマップ描画を追加
+	void    DrawShadow(Transform& transform);   // ← シャドウマップ用描画
 	void    Release();
 
 	void InitVertex(FbxMesh* mesh);
@@ -55,6 +56,11 @@ private:
 		XMFLOAT4 specular;
 		float    shininess;
 		XMFLOAT4 factor;
+	};
+
+	struct CB_SHADOW
+	{
+		XMMATRIX matLightWVP;  // ライト視点のWVP行列（これだけ）
 	};
 
 	struct CONSTANT_BUFFER
@@ -83,6 +89,7 @@ private:
 	ID3D11Buffer* pVertexBuffer_;
 	ID3D11Buffer** pIndexBuffer_;
 	ID3D11Buffer* pConstantBuffer_;
+	ID3D11Buffer* pShadowConstantBuffer_;  // シャドウ用コンスタントバッファ
 	std::vector<MATERIAL> pMaterialList_;
 	std::vector<int> indexCount_;//マテリアルごとのインデックス数
 

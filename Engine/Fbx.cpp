@@ -11,6 +11,7 @@ Fbx::Fbx()
 	: pVertexBuffer_(nullptr)
 	, pIndexBuffer_(nullptr)
 	, pConstantBuffer_(nullptr)
+	, pShadowConstantBuffer_(nullptr)
 	, vertexCount_(0)
 	, polygonCount_(0)
 	, materialCount_(0)
@@ -188,6 +189,41 @@ void Fbx::Draw(Transform& transform)
 		}
 
 		//描画
+		Direct3D::pContext->DrawIndexed(indexCount_[i], 0, 0);
+	}
+}
+
+void Fbx::DrawShadow(Transform& transform)
+{
+	// シャドウマップパス用描画。ライト視点のWVPだけをGPUに送る。
+	// 色やテクスチャは送らない。
+	transform.Calculation();
+
+	// 頂点バッファをセットする（通常のDrawと同じ）
+	UINT stride = sizeof(VERTEX);
+	UINT offset = 0;
+	Direct3D::pContext->IASetVertexBuffers(0, 1, &pVertexBuffer_, &stride, &offset);
+
+	// ライト視点のWVP行列を作る
+	CB_SHADOW cb;
+	cb.matLightWVP = transform.GetWorldMatrix()
+		* Direct3D::GetLightViewMatrix()
+		* Direct3D::GetLightProjectionMatrix();
+
+	// Map/memcpy_s/UnmapでGPUにデータを送る
+	D3D11_MAPPED_SUBRESOURCE pdata;
+	Direct3D::pContext->Map(pShadowConstantBuffer_, 0, D3D11_MAP_WRITE_DISCARD, 0, &pdata);
+	memcpy_s(pdata.pData, pdata.RowPitch, &cb, sizeof(cb));
+	Direct3D::pContext->Unmap(pShadowConstantBuffer_, 0);
+
+	// 頂点シェーダーの b0 スロットにセット
+	Direct3D::pContext->VSSetConstantBuffers(0, 1, &pShadowConstantBuffer_);
+
+	// マテリアルごとに描画（色・テクスチャは不要）
+	for (int i = 0; i < materialCount_; i++)
+	{
+		stride = sizeof(int);
+		Direct3D::pContext->IASetIndexBuffer(pIndexBuffer_[i], DXGI_FORMAT_R32_UINT, 0);
 		Direct3D::pContext->DrawIndexed(indexCount_[i], 0, 0);
 	}
 }
@@ -513,9 +549,20 @@ void Fbx::InitConstantBuffer()
 	{
 		MessageBox(NULL, L"コンスタントバッファの作成に失敗しました", L"エラー", MB_OK);
 	}
+	// シャドウ用コンスタントバッファの作成
+	D3D11_BUFFER_DESC cbShadow = {};
+	cbShadow.ByteWidth      = sizeof(CB_SHADOW);
+	cbShadow.Usage          = D3D11_USAGE_DYNAMIC;
+	cbShadow.BindFlags      = D3D11_BIND_CONSTANT_BUFFER;
+	cbShadow.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	hr = Direct3D::pDevice->CreateBuffer(&cbShadow, nullptr, &pShadowConstantBuffer_);
+	if (FAILED(hr))
+	{
+		MessageBox(NULL, L"シャドウ用コンスタントバッファの作成に失敗しました", L"エラー", MB_OK);
+	}
 }
 
-void Fbx::InitMaterial(FbxNode* pNode)
+void Fbx::InitMaterial
 {
     pMaterialList_.resize(materialCount_);
     for (int i = 0; i < materialCount_; i++)
