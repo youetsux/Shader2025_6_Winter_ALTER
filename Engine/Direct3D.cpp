@@ -34,8 +34,15 @@ namespace Direct3D
     ID3D11InputLayout* pVertexLayout = nullptr;	//頂点インプットレイアウト
     ID3D11RasterizerState* pRasterizerState = nullptr;	//ラスタライザー
 	
-    SHADER_BUNDLE shaderBundle[SHADER_MAX];	//シェーダーのバンドル
+	SHADER_BUNDLE shaderBundle[SHADER_MAX];	//シェーダーのバンドル
 	XMFLOAT4 lightPosition{ 0.0f, 0.5f ,0.0f, 0.0f }; //ライトの位置
+
+	int screenWidth  = 0;  // 画面幅（EndShadowPassでビューポートを戻すために使う）
+	int screenHeight = 0;  // 画面高さ
+
+	ID3D11Texture2D*          pShadowMapTexture = nullptr;  // 深度テクスチャ本体
+	ID3D11DepthStencilView*   pShadowMapDSV     = nullptr;  // 書き込み口（パス1用）
+	ID3D11ShaderResourceView* pShadowMapSRV     = nullptr;  // 読み込み口（パス2用）
 }
 
 
@@ -298,6 +305,9 @@ void Direct3D::SetShader(SHADER_TYPE type)
 
 HRESULT Direct3D::Initialize(int winW, int winH, HWND hWnd)
 {
+    screenWidth  = winW;  // 画面サイズを保存
+    screenHeight = winH;
+
     // Direct3Dの初期化
     DXGI_SWAP_CHAIN_DESC scDesc = {};
     //とりあえず全部0
@@ -386,6 +396,13 @@ HRESULT Direct3D::Initialize(int winW, int winH, HWND hWnd)
     {
         return hr;
     }
+
+    hr = InitShadowMap(1024, 1024);  // シャドウマップ用テクスチャを1024x1024で作成
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
     return S_OK;
 
 }
@@ -430,6 +447,9 @@ void Direct3D::Release()
     SAFE_RELEASE(pDevice);		                    //デバイス
     SAFE_RELEASE(pContext);	                //デバイスコンテキスト
     SAFE_RELEASE(pSwapChain);		                //スワップチェイン
+    SAFE_RELEASE(pShadowMapSRV);      // 読み込み口
+    SAFE_RELEASE(pShadowMapDSV);      // 書き込み口
+    SAFE_RELEASE(pShadowMapTexture);  // テクスチャ本体
     SAFE_RELEASE(pRenderTargetView);	    //レンダーターゲットビュー
 }
 
@@ -470,4 +490,53 @@ XMMATRIX Direct3D::GetLightProjectionMatrix()
 	// width=5, height=5 : ライトが照らす範囲（ワールド単位）
 	// nearZ=1, farZ=50  : ライト視点の手前・奥のクリップ距離
 	return XMMatrixOrthographicLH(5.0f, 5.0f, 1.0f, 50.0f);
+}
+
+// ========== シャドウマップ ==========
+
+HRESULT Direct3D::InitShadowMap(int width, int height)
+{
+	HRESULT hr;
+
+	// ① テクスチャ本体を作る（TYPELESS：あとから用途を決める）
+	D3D11_TEXTURE2D_DESC texDesc = {};
+	texDesc.Width          = width;
+	texDesc.Height         = height;
+	texDesc.MipLevels      = 1;
+	texDesc.ArraySize      = 1;
+	texDesc.Format         = DXGI_FORMAT_R32_TYPELESS;
+	texDesc.SampleDesc     = { 1, 0 };
+	texDesc.Usage          = D3D11_USAGE_DEFAULT;
+	texDesc.BindFlags      = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	texDesc.CPUAccessFlags = 0;
+	texDesc.MiscFlags      = 0;
+
+	hr = pDevice->CreateTexture2D(&texDesc, nullptr, &pShadowMapTexture);
+	if (FAILED(hr)) { MessageBox(nullptr, L"ShadowMap Texture の作成に失敗しました", L"エラー", MB_OK); return hr; }
+
+	// ② 書き込み口（DSV）を作る：パス1でライト視点から深度を書き込む
+	D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+	dsvDesc.Format             = DXGI_FORMAT_D32_FLOAT;
+	dsvDesc.ViewDimension      = D3D11_DSV_DIMENSION_TEXTURE2D;
+	dsvDesc.Texture2D.MipSlice = 0;
+
+	hr = pDevice->CreateDepthStencilView(pShadowMapTexture, &dsvDesc, &pShadowMapDSV);
+	if (FAILED(hr)) { MessageBox(nullptr, L"ShadowMap DSV の作成に失敗しました", L"エラー", MB_OK); return hr; }
+
+	// ③ 読み込み口（SRV）を作る：パス2でシェーダーがサンプリングする
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format                    = DXGI_FORMAT_R32_FLOAT;
+	srvDesc.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels       = 1;
+
+	hr = pDevice->CreateShaderResourceView(pShadowMapTexture, &srvDesc, &pShadowMapSRV);
+	if (FAILED(hr)) { MessageBox(nullptr, L"ShadowMap SRV の作成に失敗しました", L"エラー", MB_OK); return hr; }
+
+	return S_OK;
+}
+
+ID3D11ShaderResourceView* Direct3D::GetShadowMapSRV()
+{
+	return pShadowMapSRV;
 }

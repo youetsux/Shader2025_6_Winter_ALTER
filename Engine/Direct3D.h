@@ -50,4 +50,7 @@ namespace Direct3D
 
 	DirectX::XMMATRIX GetLightViewMatrix();        // ライト視点のビュー行列
 	DirectX::XMMATRIX GetLightProjectionMatrix();  // ライト視点の射影行列（正射影）
+
+	HRESULT InitShadowMap(int width, int height);     // シャドウマップ用テクスチャ作成
+	ID3D11ShaderResourceView* GetShadowMapSRV();      // シェーダーで読む口を返す
 };
