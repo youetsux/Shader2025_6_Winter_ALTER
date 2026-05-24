@@ -110,6 +110,12 @@ void Stage::Update()
     XMStoreFloat4(&cb.eyePosition, Camera::GetPosition());
     cb.lightType = lightType_;
 
+    // ライト視点のVP行列を計算して送る（第7章で影判定に使う）
+    XMMATRIX lightV  = Direct3D::GetLightViewMatrix();
+    XMMATRIX lightP  = Direct3D::GetLightProjectionMatrix();
+    XMMATRIX lightVP = lightV * lightP;
+    XMStoreFloat4x4(&cb.matLightVP, lightVP);  // row_majorのため転置不要
+
     D3D11_MAPPED_SUBRESOURCE pdata;
     Direct3D::pContext->Map(pConstantBuffer_, 0, D3D11_MAP_WRITE_DISCARD, 0, &pdata);
     memcpy_s(pdata.pData, pdata.RowPitch, (void*)(&cb), sizeof(cb));
@@ -122,24 +128,33 @@ void Stage::Update()
 
 void Stage::Draw()
 {
+    // ===== トランスフォームの設定 =====
     Transform ltr;
     ltr.position_ = { Direct3D::GetLightPos().x, Direct3D::GetLightPos().y, Direct3D::GetLightPos().z };
     ltr.scale_ = { 0.1, 0.1, 0.1 };
     Model::SetTransform(hball_, ltr);
-    Model::Draw(hball_);
 
     Transform tr;
     tr.position_ = { 0, 0, 0 };
     tr.rotate_ = { 0, 180, 0 };
-
     Model::SetTransform(hRoom_, tr);
-    Model::Draw(hRoom_);
 
     static Transform tDonut;
     tDonut.scale_ = { 1, 1, 1 };
     tDonut.position_ = { 0, 0.5, 1.0 };
     tDonut.rotate_.y += 0.1;
     Model::SetTransform(hDonut_, tDonut);
+
+    // ===== パス1：シャドウパス =====
+    // ライト視点でドーナツの深度だけ書く
+    Direct3D::BeginShadowPass();
+    Model::DrawShadow(hDonut_);
+    Direct3D::EndShadowPass();
+
+    // ===== パス2：メインパス =====
+    // カメラ視点で普通に描画
+    Model::Draw(hball_);
+    Model::Draw(hRoom_);
     Model::Draw(hDonut_);
 
     // ========== ImGui ==========

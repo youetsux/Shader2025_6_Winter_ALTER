@@ -8,10 +8,11 @@ namespace
 }
 struct CONSTANTBUFFER_STAGE
 {
-	XMFLOAT4 lightPosition;  // 光源の位置 or 方向
-	XMFLOAT4 eyePosition;    // カメラ位置
-	int      lightType;      // 0=平行光源, 1=点光源
-	XMFLOAT3 _pad;           // 16バイトアライメント用パディング
+	XMFLOAT4   lightPosition;  // 光源の位置 or 方向
+	XMFLOAT4   eyePosition;    // カメラ位置
+	int        lightType;      // 0=平行光源, 1=点光源
+	XMFLOAT3   _pad;           // 16バイトアライメント用パディング
+	XMFLOAT4X4 matLightVP;     // ライト視点のVP行列（第7章で影判定に使う）
 };
 
 class Stage :
