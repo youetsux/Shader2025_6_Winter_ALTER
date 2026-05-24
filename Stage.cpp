@@ -60,6 +60,22 @@ void Stage::Initialize()
 	//pMelbourne_ = new Sprite(L"Assets\\melbourne.png");
 	Camera::SetPosition({ 0, 0.8, -2.8 });
 	Camera::SetTarget({ 0,0.8,0 });
+
+	// 比較サンプラーを作成して s1 にセット（第8章：影のエッジをなめらかにする）
+	D3D11_SAMPLER_DESC sd = {};
+	sd.Filter         = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+	sd.AddressU       = D3D11_TEXTURE_ADDRESS_BORDER;
+	sd.AddressV       = D3D11_TEXTURE_ADDRESS_BORDER;
+	sd.AddressW       = D3D11_TEXTURE_ADDRESS_BORDER;
+	sd.BorderColor[0] = 1.0f;  // 範囲外は影なし（明るい）扱い
+	sd.BorderColor[1] = 1.0f;
+	sd.BorderColor[2] = 1.0f;
+	sd.BorderColor[3] = 1.0f;
+	sd.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+	ID3D11SamplerState* pShadowSampler = nullptr;
+	Direct3D::pDevice->CreateSamplerState(&sd, &pShadowSampler);
+	Direct3D::pContext->PSSetSamplers(1, 1, &pShadowSampler);
+	SAFE_RELEASE(pShadowSampler);
 }
 
 void Stage::Update()

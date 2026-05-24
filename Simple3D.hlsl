@@ -3,8 +3,8 @@
 //───────────────────────────────────────
 Texture2D    g_texture       : register(t0);
 SamplerState g_sampler       : register(s0);
-Texture2D    g_shadowMap     : register(t1);  // シャドウマップ
-SamplerState g_shadowSampler : register(s1);  // サンプラー（第8章で比較サンプラーに変える）
+Texture2D              g_shadowMap     : register(t1);  // シャドウマップ
+SamplerComparisonState g_shadowSampler : register(s1);  // 比較サンプラー（第8章で変更）
 
 //───────────────────────────────────────
 // コンスタントバッファ
@@ -167,8 +167,8 @@ float4 PS(VS_OUT inData) : SV_Target
         float currentDepth = lightClipPos.z / lightClipPos.w;
         float bias = 0.005;  // セルフシャドウノイズ防止
 
-        float shadowDepth = g_shadowMap.Sample(g_shadowSampler, shadowUV).r;
-        shadow = (currentDepth - bias <= shadowDepth) ? 1.0 : 0.0;
+        // 比較サンプラーが近隣複数点を平均して返す（PCF）
+        shadow = g_shadowMap.SampleCmpLevelZero(g_shadowSampler, shadowUV, currentDepth - bias);
     }
 
     // 影を色に掛ける（0.3 は完全に真っ暗にならないよう残す環境光）
