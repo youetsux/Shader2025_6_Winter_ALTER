@@ -72,8 +72,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\FBXSDK\2020.3.4\include;$(IncludePath);C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\include</IncludePath>
-    <LibraryPath>C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\lib\x64\debug;D:\FBXSDK\2020.3.4\lib\vs2022\x64\debug;$(LibraryPath);C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\lib\x64\debug</LibraryPath>
+    <IncludePath>C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.9\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\lib\x64\debug;D:\FBXSDK\2020.3.4\lib\vs2022\x64\debug;C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.9\lib\x64\debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\include;$(IncludePath);C:\Program Files\Autodesk\FBX\FBX SDK\2020.3.7\include</IncludePath>
@@ -203,6 +203,9 @@
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="ShadowMap.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
+    </FxCompile>
     <FxCompile Include="Simple2D.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
@@ -224,6 +227,18 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".github\copilot-instructions.md" />
+    <None Include="Docs\changelog\00_before_cleanup.md" />
+    <None Include="Docs\changelog\01_directional_light_default.md" />
+    <None Include="Docs\changelog\02_light_camera_matrix.md" />
+    <None Include="Docs\changelog\03_shadowmap_texture.md" />
+    <None Include="Docs\changelog\04_shadowmap_shader.md" />
+    <None Include="Docs\changelog\05_draw_shadow_model.md" />
+    <None Include="Docs\changelog\06_two_pass_rendering.md" />
+    <None Include="Docs\changelog\07_shader_depth_compare.md" />
+    <None Include="Docs\changelog\08_comparison_sampler.md" />
+    <None Include="Docs\changelog\09_bias_adjustment.md" />
+    <None Include="Docs\teacher_guide.md" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
