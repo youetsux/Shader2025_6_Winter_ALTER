@@ -15,7 +15,8 @@ enum SHADER_TYPE
 {
 	SHADER_3D,	//3D用シェーダー
 	SHADER_2D,	//2D用シェーダー
-	SHADER_NORMALMAP, //法線マップ用シェーダー
+	SHADER_NORMALMAP,  //法線マップ用シェーダー
+	SHADER_SHADOWMAP,  //シャドウマップ用シェーダー
 	SHADER_MAX //シェーダーの最大数
 };
 
@@ -53,4 +54,8 @@ namespace Direct3D
 
 	HRESULT InitShadowMap(int width, int height);     // シャドウマップ用テクスチャ作成
 	ID3D11ShaderResourceView* GetShadowMapSRV();      // シェーダーで読む口を返す
+
+	HRESULT InitShadowShader();   // シャドウマップ用シェーダー初期化
+	void BeginShadowPass();       // シャドウパス開始（ライト視点で深度だけ描く）
+	void EndShadowPass();         // シャドウパス終了（通常描画に戻す）
 };

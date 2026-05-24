@@ -56,10 +56,14 @@ HRESULT Direct3D::InitShader()
     {
         return E_FAIL;
     }
-    if (FAILED(InitNormalShader()))
-    {
-        return E_FAIL;
-    }
+	if (FAILED(InitNormalShader()))
+	{
+		return E_FAIL;
+	}
+	if (FAILED(InitShadowShader()))
+	{
+		return E_FAIL;
+	}
 	return S_OK;
 }
 
@@ -539,4 +543,91 @@ HRESULT Direct3D::InitShadowMap(int width, int height)
 ID3D11ShaderResourceView* Direct3D::GetShadowMapSRV()
 {
 	return pShadowMapSRV;
+}
+
+HRESULT Direct3D::InitShadowShader()
+{
+	HRESULT hr;
+
+	// 頂点シェーダーをコンパイル
+	ID3DBlob* pCompileVS = nullptr;
+	D3DCompileFromFile(L"ShadowMap.hlsl", nullptr, nullptr,
+		"VS", "vs_5_0", 0, 0, &pCompileVS, nullptr);
+	assert(pCompileVS != nullptr);
+
+	hr = pDevice->CreateVertexShader(
+		pCompileVS->GetBufferPointer(), pCompileVS->GetBufferSize(),
+		nullptr, &shaderBundle[SHADER_SHADOWMAP].pVertexShader);
+	if (FAILED(hr)) { MessageBox(nullptr, L"Shadow 頂点シェーダーの作成に失敗しました", L"エラー", MB_OK); return hr; }
+
+	// ピクセルシェーダーをコンパイル
+	ID3DBlob* pCompilePS = nullptr;
+	D3DCompileFromFile(L"ShadowMap.hlsl", nullptr, nullptr,
+		"PS", "ps_5_0", 0, 0, &pCompilePS, nullptr);
+	assert(pCompilePS != nullptr);
+
+	hr = pDevice->CreatePixelShader(
+		pCompilePS->GetBufferPointer(), pCompilePS->GetBufferSize(),
+		nullptr, &shaderBundle[SHADER_SHADOWMAP].pPixelShader);
+	if (FAILED(hr)) { MessageBox(nullptr, L"Shadow ピクセルシェーダーの作成に失敗しました", L"エラー", MB_OK); return hr; }
+
+	// InputLayout は POSITION のみ（UV・法線は不要）
+	D3D11_INPUT_ELEMENT_DESC layout[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+	hr = pDevice->CreateInputLayout(layout, 1,
+		pCompileVS->GetBufferPointer(), pCompileVS->GetBufferSize(),
+		&shaderBundle[SHADER_SHADOWMAP].pVertexLayout);
+	if (FAILED(hr)) { MessageBox(nullptr, L"Shadow InputLayout の作成に失敗しました", L"エラー", MB_OK); return hr; }
+
+	pCompileVS->Release();
+	pCompilePS->Release();
+
+	// ラスタライザー（カリングなし）
+	D3D11_RASTERIZER_DESC rdc = {};
+	rdc.CullMode              = D3D11_CULL_NONE;
+	rdc.FillMode              = D3D11_FILL_SOLID;
+	rdc.FrontCounterClockwise = FALSE;
+	rdc.DepthClipEnable       = TRUE;
+	pDevice->CreateRasterizerState(&rdc, &shaderBundle[SHADER_SHADOWMAP].pRasterizerState);
+
+	return S_OK;
+}
+
+void Direct3D::BeginShadowPass()
+{
+	// シャドウマップの深度値を 1.0（最大値）でクリア
+	pContext->ClearDepthStencilView(pShadowMapDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	// RTV = nullptr（色は書かない）、DSV = シャドウマップ（深度だけ書く）
+	ID3D11RenderTargetView* nullRTV = nullptr;
+	pContext->OMSetRenderTargets(1, &nullRTV, pShadowMapDSV);
+
+	// ビューポートをシャドウマップのサイズに合わせる
+	D3D11_TEXTURE2D_DESC texDesc;
+	pShadowMapTexture->GetDesc(&texDesc);
+
+	D3D11_VIEWPORT vp = {};
+	vp.Width    = (float)texDesc.Width;
+	vp.Height   = (float)texDesc.Height;
+	vp.MinDepth = 0.0f;
+	vp.MaxDepth = 1.0f;
+	pContext->RSSetViewports(1, &vp);
+
+	// シャドウ専用シェーダーをセット
+	SetShader(SHADER_SHADOWMAP);
+}
+
+void Direct3D::EndShadowPass()
+{
+	// レンダーターゲットを通常の画面（RTV + 深度ステンシル）に戻す
+	pContext->OMSetRenderTargets(1, &pRenderTargetView, pDepthStencilView);
+
+	// ビューポートも画面サイズに戻す
+	D3D11_VIEWPORT vp = {};
+	vp.Width    = (float)screenWidth;
+	vp.Height   = (float)screenHeight;
+	vp.MinDepth = 0.0f;
+	vp.MaxDepth = 1.0f;
+	pContext->RSSetViewports(1, &vp);
 }
