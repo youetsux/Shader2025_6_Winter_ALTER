@@ -562,7 +562,7 @@ void Fbx::InitConstantBuffer()
 	}
 }
 
-void Fbx::InitMaterial
+void Fbx::InitMaterial(FbxNode* pNode)
 {
     pMaterialList_.resize(materialCount_);
     for (int i = 0; i < materialCount_; i++)
