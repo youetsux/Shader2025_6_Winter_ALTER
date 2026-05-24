@@ -1,8 +1,10 @@
 //───────────────────────────────────────
 // テクスチャ＆サンプラーデータのグローバル変数定義
 //───────────────────────────────────────
-Texture2D g_texture : register(t0); //テクスチャー
-SamplerState g_sampler : register(s0); //サンプラー
+Texture2D    g_texture       : register(t0);
+SamplerState g_sampler       : register(s0);
+Texture2D    g_shadowMap     : register(t1);  // シャドウマップ
+SamplerState g_shadowSampler : register(s1);  // サンプラー（第8章で比較サンプラーに変える）
 
 //───────────────────────────────────────
 // コンスタントバッファ
@@ -23,10 +25,11 @@ cbuffer global : register(b0)
 
 cbuffer gStage : register(b1)
 {
-    float4 lightPosition;  // 平行光源: 方向ベクトル / 点光源: 位置
-    float4 eyePosition;    // カメラ位置
-    int    lightType;      // 0=平行光源, 1=点光源
-    float3 _pad;
+    float4             lightPosition;  // 平行光源: 方向ベクトル / 点光源: 位置
+    float4             eyePosition;    // カメラ位置
+    int                lightType;      // 0=平行光源, 1=点光源
+    float3             _pad;
+    row_major float4x4 matLightVP;     // ライト視点のVP行列（第7章で影判定に使う）
 };
 
 
@@ -145,5 +148,31 @@ float4 PS(VS_OUT inData) : SV_Target
     }
     
     float4 color = diffuseTerm + specularCol + ambientTerm;
+
+    // ===== 影判定 =====
+    float shadow = 1.0;  // デフォルトは明るい（影なし）
+
+    // ワールド座標 → ライト視点クリップ座標
+    float4 lightClipPos = mul(inData.wpos, matLightVP);
+
+    // クリップ座標 → シャドウマップUV
+    float2 shadowUV;
+    shadowUV.x =  lightClipPos.x / lightClipPos.w * 0.5 + 0.5;
+    shadowUV.y = -lightClipPos.y / lightClipPos.w * 0.5 + 0.5;  // Yは上下反転
+
+    // シャドウマップの範囲内のみ比較する
+    if (shadowUV.x >= 0.0 && shadowUV.x <= 1.0 &&
+        shadowUV.y >= 0.0 && shadowUV.y <= 1.0)
+    {
+        float currentDepth = lightClipPos.z / lightClipPos.w;
+        float bias = 0.005;  // セルフシャドウノイズ防止
+
+        float shadowDepth = g_shadowMap.Sample(g_shadowSampler, shadowUV).r;
+        shadow = (currentDepth - bias <= shadowDepth) ? 1.0 : 0.0;
+    }
+
+    // 影を色に掛ける（0.3 は完全に真っ暗にならないよう残す環境光）
+    color *= (0.3 + 0.7 * shadow);
+
     return color;
 }

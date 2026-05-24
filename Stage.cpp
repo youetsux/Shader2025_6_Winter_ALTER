@@ -152,10 +152,18 @@ void Stage::Draw()
     Direct3D::EndShadowPass();
 
     // ===== パス2：メインパス =====
+    // シャドウマップを t1 にセットしてから描画する
+    ID3D11ShaderResourceView* pShadowSRV = Direct3D::GetShadowMapSRV();
+    Direct3D::pContext->PSSetShaderResources(1, 1, &pShadowSRV);
+
     // カメラ視点で普通に描画
     Model::Draw(hball_);
     Model::Draw(hRoom_);
     Model::Draw(hDonut_);
+
+    // 描画後は必ず解除する（次フレームのDSVバインド競合を防ぐ）
+    ID3D11ShaderResourceView* nullSRV = nullptr;
+    Direct3D::pContext->PSSetShaderResources(1, 1, &nullSRV);
 
     // ========== ImGui ==========
     XMFLOAT4 lightPos = Direct3D::GetLightPos();
