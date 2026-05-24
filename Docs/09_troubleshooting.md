@@ -55,7 +55,7 @@ Model::DrawShadow(hDonut_);
 この教材では現在この値を使っている。
 
 ```hlsl
-float bias = 0.01;
+float bias = 0.015;
 ```
 
 それでも出る場合はさらに大きくする。
