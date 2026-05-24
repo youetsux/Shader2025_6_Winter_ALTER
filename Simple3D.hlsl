@@ -165,7 +165,7 @@ float4 PS(VS_OUT inData) : SV_Target
         shadowUV.y >= 0.0 && shadowUV.y <= 1.0)
     {
         float currentDepth = lightClipPos.z / lightClipPos.w;
-        float bias = 0.005;  // セルフシャドウノイズ防止
+        float bias = 0.015; // セルフシャドウノイズ防止（大きくしすぎると影が浮く）
 
         // 比較サンプラーが近隣複数点を平均して返す（PCF）
         shadow = g_shadowMap.SampleCmpLevelZero(g_shadowSampler, shadowUV, currentDepth - bias);
