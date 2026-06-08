@@ -1,69 +1,70 @@
-# é€²æ—è¨˜éŒ²
+# i’»‹L˜^
 
-## ç¾åœ¨ã®çŠ¶æ…‹
+## Œ»İ‚Ìó‘Ô
 
-**Step5 å®Œäº†ãƒ»ã‚³ãƒŸãƒƒãƒˆæ¸ˆã¿ï¼ˆ`04f5ccd`ï¼‰**
-
----
-
-## å®Œäº†æ¸ˆã¿
-
-### äº‹å‰æº–å‚™ï¼ˆ`8eee953`ï¼‰
-- `lightType_ = 0`ï¼ˆãƒ‡ãƒ•ã‚©ãƒ«ãƒˆï¼šå¹³è¡Œå…‰æºï¼‰
-- ãƒ©ã‚¤ãƒˆåˆæœŸå€¤ã‚’æ–¹å‘ãƒ™ã‚¯ãƒˆãƒ« `{ 0.5f, -1.0f, 0.7f, 0.0f }` ã«å¤‰æ›´
-- ImGui ã«å¹³è¡Œå…‰æº / ç‚¹å…‰æºã®åˆ‡ã‚Šæ›¿ãˆãƒœã‚¿ãƒ³ã‚’è¿½åŠ 
-
-### Step1ï¼šãƒ©ã‚¤ãƒˆè¦–ç‚¹ã®è¡Œåˆ—ã‚’è¨ˆç®—ã™ã‚‹ âœ…ï¼ˆ`0bf7ab5`ï¼‰
-- `Direct3D` ã« `GetLightViewMatrix()` / `GetLightProjectionMatrix()` ã‚’è¿½åŠ 
-- `Stage::Draw()` ã® ImGui ã«ã€ŒLight Matrix Debugã€æŠ˜ã‚ŠãŸãŸã¿è¡¨ç¤ºã‚’è¿½åŠ 
-
-### Step2ï¼šã‚·ãƒ£ãƒ‰ã‚¦ãƒãƒƒãƒ—ç”¨ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ä½œæˆã™ã‚‹ âœ…ï¼ˆ`a83312b` ã«å«ã‚€ï¼‰
-- `Direct3D` ã« `InitShadowMap()` / `GetShadowMapSRV()` ã‚’è¿½åŠ 
-- `namespace Direct3D` ã« `pShadowMapTexture` / `pShadowMapDSV` / `pShadowMapSRV` ã‚’è¿½åŠ 
-- `Initialize()` å†…ã§ `InitShadowMap(1024, 1024)` ã‚’å‘¼ã¶
-- `Release()` ã« `SAFE_RELEASE` ã‚’è¿½åŠ 
-
-### Step3ï¼šã‚·ãƒ£ãƒ‰ã‚¦ç”¨ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã‚’ä½œæˆã™ã‚‹ âœ…ï¼ˆ`a83312b` ã«å«ã‚€ï¼‰
-- `SHADER_SHADOWMAP` ã‚’ enum ã«è¿½åŠ 
-- `ShadowMap.hlsl` ã‚’æ–°è¦ä½œæˆ
-- `InitShadowShader()` ã‚’è¿½åŠ ã€`InitShader()` ã‹ã‚‰å‘¼ã¶
-- `BeginShadowPass()` / `EndShadowPass()` ã‚’è¿½åŠ 
-
-### Step4ï¼š2ãƒ‘ã‚¹æç”»ã‚’çµ„ã¿è¾¼ã‚€ âœ…ï¼ˆ`a83312b`ï¼‰
-- `Fbx` ã« `CB_SHADOW` / `pShadowConstantBuffer_` / `DrawShadow()` ã‚’è¿½åŠ 
-- `Model` ã« `DrawShadow()` ã‚’è¿½åŠ 
-- `Stage::Initialize()` ã«æ¯”è¼ƒã‚µãƒ³ãƒ—ãƒ©ãƒ¼ä½œæˆã‚’è¿½åŠ ï¼ˆ`s1` ã‚¹ãƒ­ãƒƒãƒˆï¼‰
-- `Stage::Draw()` ã‚’2ãƒ‘ã‚¹æ§‹é€ ã«å¤‰æ›´ï¼ˆ`hRoom_` ã¯ã‚·ãƒ£ãƒ‰ã‚¦ã‚­ãƒ£ã‚¹ã‚¿ãƒ¼ã«å«ã‚ãªã„ï¼‰
-- `CONSTANTBUFFER_STAGE` ã« `matLightVP` ã‚’è¿½åŠ 
-- `Stage::Update()` ã§ `matLightVP` ã‚’è¨ˆç®—ãƒ»é€ä¿¡
-
-### Step5ï¼šå½±ã®åˆ¤å®šã‚’ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã«è¿½åŠ ã™ã‚‹ âœ…ï¼ˆ`04f5ccd`ï¼‰
-- `Simple3D.hlsl` ã« `g_shadowMap` / `g_shadowSampler` å®£è¨€è¿½åŠ 
-- `cbuffer gStage` ã« `matLightVP` è¿½åŠ 
-- `PS()` ã«å½±åˆ¤å®šã‚³ãƒ¼ãƒ‰ã‚’è¿½åŠ ï¼ˆ`SampleCmpLevelZero` + biasï¼‰
-- `Stage::Draw()` ã« SRV ã®ã‚»ãƒƒãƒˆï¼è§£é™¤ã‚’è¿½åŠ 
-- `GetLightViewMatrix()` ã® `lightEye` æ–¹å‘ã‚’ä¿®æ­£ï¼ˆnegation ä¸è¦ï¼‰
-- `InitShadowShader()` ã®ãƒ©ã‚¹ã‚¿ãƒ©ã‚¤ã‚¶ãƒ¼ã‚’ `CULL_NONE` ã«ä¿®æ­£
-- `GetLightProjectionMatrix()` ã®ãƒ•ãƒ©ã‚¹ã‚¿ãƒ ã‚’ `5.0f` ã«ç¸®å°
+**Step5 Š®—¹EƒRƒ~ƒbƒgÏ‚İi`04f5ccd`j**
 
 ---
 
-## æ¬¡ã«ã‚„ã‚‹ã“ã¨
+## Š®—¹Ï‚İ
 
-### Step6ï¼šãƒ‡ãƒãƒƒã‚° UI ã¨ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿èª¿æ•´
-è©³ç´°ã¯ [`Step6_Debug.md`](./Step6_Debug.md) ã‚’å‚ç…§ã€‚
+### –‘O€”õi`8eee953`j
+- `lightType_ = 0`iƒfƒtƒHƒ‹ƒgF•½sŒõŒ¹j
+- ƒ‰ƒCƒg‰Šú’l‚ğ•ûŒüƒxƒNƒgƒ‹ `{ 0.5f, -1.0f, 0.7f, 0.0f }` ‚É•ÏX
+- ImGui ‚É•½sŒõŒ¹ / “_ŒõŒ¹‚ÌØ‚è‘Ö‚¦ƒ{ƒ^ƒ“‚ğ’Ç‰Á
 
-ä¸»ãªå¤‰æ›´ï¼š
-- `Stage` ã« `shadowBias_` / `lightOrthoSize_` / `showShadowMap_` ãƒ¡ãƒ³ãƒã‚’è¿½åŠ 
-- `GetLightProjectionMatrix(float orthoSize)` ã‚’ã‚ªãƒ¼ãƒãƒ¼ãƒ­ãƒ¼ãƒ‰
-- ImGui ã«ãƒã‚¤ã‚¢ã‚¹ã¨æ­£å°„å½±ã‚µã‚¤ã‚ºã®ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã€ã‚·ãƒ£ãƒ‰ã‚¦ãƒãƒƒãƒ—å¯è¦–åŒ–ã‚’è¿½åŠ 
-- `HLSL` ã®å›ºå®š `bias` ã‚’ `shadowBias` ï¼ˆCB çµŒç”±ï¼‰ã«å¤‰æ›´
+### Step1Fƒ‰ƒCƒg‹“_‚Ìs—ñ‚ğŒvZ‚·‚é ?i`0bf7ab5`j
+- `Direct3D` ‚É `GetLightViewMatrix()` / `GetLightProjectionMatrix()` ‚ğ’Ç‰Á
+- `Stage::Draw()` ‚Ì ImGui ‚ÉuLight Matrix DebugvÜ‚è‚½‚½‚İ•\¦‚ğ’Ç‰Á
+
+### Step2FƒVƒƒƒhƒEƒ}ƒbƒv—pƒeƒNƒXƒ`ƒƒ‚ğì¬‚·‚é ?i`a83312b` ‚ÉŠÜ‚Şj
+- `Direct3D` ‚É `InitShadowMap()` / `GetShadowMapSRV()` ‚ğ’Ç‰Á
+- `namespace Direct3D` ‚É `pShadowMapTexture` / `pShadowMapDSV` / `pShadowMapSRV` ‚ğ’Ç‰Á
+- `Initialize()` “à‚Å `InitShadowMap(1024, 1024)` ‚ğŒÄ‚Ô
+- `Release()` ‚É `SAFE_RELEASE` ‚ğ’Ç‰Á
+
+### Step3FƒVƒƒƒhƒE—pƒVƒF[ƒ_[‚ğì¬‚·‚é ?i`a83312b` ‚ÉŠÜ‚Şj
+- `SHADER_SHADOWMAP` ‚ğ enum ‚É’Ç‰Á
+- `ShadowMap.hlsl` ‚ğV‹Kì¬
+- `InitShadowShader()` ‚ğ’Ç‰ÁA`InitShader()` ‚©‚çŒÄ‚Ô
+- `BeginShadowPass()` / `EndShadowPass()` ‚ğ’Ç‰Á
+
+### Step4F2ƒpƒX•`‰æ‚ğ‘g‚İ‚Ş ?i`a83312b`j
+- `Fbx` ‚É `CB_SHADOW` / `pShadowConstantBuffer_` / `DrawShadow()` ‚ğ’Ç‰Á
+- `Model` ‚É `DrawShadow()` ‚ğ’Ç‰Á
+- `Stage::Initialize()` ‚É”äŠrƒTƒ“ƒvƒ‰[ì¬‚ğ’Ç‰Ái`s1` ƒXƒƒbƒgj
+- `Stage::Draw()` ‚ğ2ƒpƒX\‘¢‚É•ÏXi`hRoom_` ‚ÍƒVƒƒƒhƒEƒLƒƒƒXƒ^[‚ÉŠÜ‚ß‚È‚¢j
+- `CONSTANTBUFFER_STAGE` ‚É `matLightVP` ‚ğ’Ç‰Á
+- `Stage::Update()` ‚Å `matLightVP` ‚ğŒvZE‘—M
+
+### Step5F‰e‚Ì”»’è‚ğƒVƒF[ƒ_[‚É’Ç‰Á‚·‚é ?i`04f5ccd`j
+- `Simple3D.hlsl` ‚É `g_shadowMap` / `g_shadowSampler` éŒ¾’Ç‰Á
+- `cbuffer gStage` ‚É `matLightVP` ’Ç‰Á
+- `PS()` ‚É‰e”»’èƒR[ƒh‚ğ’Ç‰Ái`SampleCmpLevelZero` + biasj
+- `Stage::Draw()` ‚É SRV ‚ÌƒZƒbƒg^‰ğœ‚ğ’Ç‰Á
+- `GetLightViewMatrix()` ‚Ì `lightEye` •ûŒü‚ğC³inegation •s—vj
+- `InitShadowShader()` ‚Ìƒ‰ƒXƒ^ƒ‰ƒCƒU[‚ğ `CULL_NONE` ‚ÉC³
+- `GetLightProjectionMatrix()` ‚Ìƒtƒ‰ƒXƒ^ƒ€‚ğ `5.0f` ‚Ék¬
 
 ---
 
-## å†é–‹æ–¹æ³•
+## Ÿ‚É‚â‚é‚±‚Æ
 
-1. Visual Studio ã§ `MyFirstGame.sln` ã‚’é–‹ã
-2. ã“ã®ãƒ•ã‚¡ã‚¤ãƒ«ã§ç¾åœ¨ã®é€²æ—ã‚’ç¢ºèªã™ã‚‹
-3. æ¬¡ã®Stepã®ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚’é–‹ã
-4. GitHub Copilot ã«ã€ŒStep6å®Ÿè£…ã—ã¦ã€ã¨æŒ‡ç¤ºã™ã‚‹
+### ƒI[ƒfƒBƒIƒ‰ƒCƒuƒ‰ƒŠ‚Ìì¬
+Ú×‚Í [`Docs/Audio/`](./Audio/) ˆÈ‰º‚ÌƒhƒLƒ…ƒƒ“ƒg‚ğQÆiì¬—\’èjB
+
+---
+
+## ƒVƒƒƒhƒEƒ}ƒbƒvŠÖ˜AƒhƒLƒ…ƒƒ“ƒg
+
+`Docs/ShadowMap/` ƒtƒHƒ‹ƒ_‚É‚Ü‚Æ‚ß‚Ä‚ ‚éB
+- [`ShadowMap/00_overview.md`](./ShadowMap/00_overview.md) \ ‘S‘ÌŠT—vEStep‚Ìˆê——
+- `ShadowMap/Step1.md` ? `ShadowMap/Step5.md` \ ŠeƒXƒeƒbƒv‚Ìè‡
+
+---
+
+## ÄŠJ•û–@
+
+1. Visual Studio ‚Å `MyFirstGame.sln` ‚ğŠJ‚­
+2. ‚±‚Ìƒtƒ@ƒCƒ‹‚ÅŒ»İ‚Ìi’»‚ğŠm”F‚·‚é
+3. GitHub Copilot ‚ÉuƒI[ƒfƒBƒIƒ‰ƒCƒuƒ‰ƒŠ‚ğì‚è‚½‚¢v‚Æw¦‚·‚é
