@@ -2,17 +2,17 @@
 #include "Engine\\GameObject.h"
 #include <windows.h>
 #include "Engine\\Sprite.h"
+//#include <memory>
+//#include <Audio.h>
 
-namespace
-{
-}
+
 struct CONSTANTBUFFER_STAGE
 {
-	XMFLOAT4   lightPosition;  // å…‰æºã®ä½ç½® or æ–¹å‘
-	XMFLOAT4   eyePosition;    // ã‚«ãƒ¡ãƒ©ä½ç½®
-	int        lightType;      // 0=å¹³è¡Œå…‰æº, 1=ç‚¹å…‰æº
-	XMFLOAT3   _pad;           // 16ãƒã‚¤ãƒˆã‚¢ãƒ©ã‚¤ãƒ¡ãƒ³ãƒˆç”¨ãƒ‘ãƒ‡ã‚£ãƒ³ã‚°
-	XMFLOAT4X4 matLightVP;     // ãƒ©ã‚¤ãƒˆè¦–ç‚¹ã® ViewÃ—Projection è¡Œåˆ—ï¼ˆå½±åˆ¤å®šç”¨ï¼‰
+	XMFLOAT4   lightPosition;  // ŒõŒ¹‚ÌˆÊ’u or •ûŒü
+	XMFLOAT4   eyePosition;    // ƒJƒƒ‰ˆÊ’u
+	int        lightType;      // 0=•½sŒõŒ¹, 1=“_ŒõŒ¹
+	XMFLOAT3   _pad;           // 16ƒoƒCƒgƒAƒ‰ƒCƒƒ“ƒg—pƒpƒfƒBƒ“ƒO
+	XMFLOAT4X4 matLightVP;     // ƒ‰ƒCƒg‹“_‚Ì View~Projection s—ñi‰e”»’è—pj
 };
 
 class Stage :
@@ -26,13 +26,16 @@ public:
 	void Draw()override;
 	void Release()override;
 private:
-	int hball_;    //ãƒ¢ãƒ‡ãƒ«ç•ªå·
+	int hball_;    //ƒ‚ƒfƒ‹”Ô†
 	int hRoom_;
 	int hGround_;
 	int hDonut_;
-	int lightType_;              // 0=å¹³è¡Œå…‰æº, 1=ç‚¹å…‰æº
+	int lightType_;              // 0=•½sŒõŒ¹, 1=“_ŒõŒ¹
 	//Sprite* pMelbourne_;
 	ID3D11Buffer* pConstantBuffer_;
 	void InitConstantBuffer();
+
+	//std::unique_ptr<DirectX::AudioEngine> audioEngine_;
+	//std::unique_ptr<DirectX::SoundEffect> testSound_;
 };
 

@@ -3,6 +3,7 @@
 #include "Engine/SceneManager.h"
 #include "Stage.h"
 
+
 TestScene::TestScene(GameObject* parent)
 	:GameObject(parent, "TestScene")
 {
@@ -25,6 +26,9 @@ void TestScene::Update()
 	//}
 	//スペースキー押したら 
 	// SceneManager::ChangeScene(SCENE_ID_PLAY); を呼び出してね
+
+
+
 }
 
 void TestScene::Draw()

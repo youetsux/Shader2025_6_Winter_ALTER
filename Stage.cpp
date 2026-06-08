@@ -83,6 +83,14 @@ void Stage::Initialize()
 	Direct3D::pDevice->CreateSamplerState(&sampDesc, &pShadowSampler);
 	Direct3D::pContext->PSSetSamplers(1, 1, &pShadowSampler);
 	SAFE_RELEASE(pShadowSampler); // コンテキストが参照を保持するのでここで解放OK
+
+
+    //audioEngine_ = std::make_unique<DirectX::AudioEngine>();
+    //testSound_ = std::make_unique<DirectX::SoundEffect>(
+    //    audioEngine_.get(),
+    //    L"Assets/Audio/A1_02033.WAV"
+    //);
+
 }
 
 void Stage::Update()
@@ -151,7 +159,18 @@ void Stage::Update()
     // コンスタントバッファ
     Direct3D::pContext->VSSetConstantBuffers(1, 1, &pConstantBuffer_);  // 頂点シェーダー用
     Direct3D::pContext->PSSetConstantBuffers(1, 1, &pConstantBuffer_);  // ピクセルシェーダー用
+
+  //  if (Input::IsKeyDown(DIK_P))
+  //  {
+		//testSound_->Play();
+  //  }
+
+  //  if (audioEngine_ != nullptr)
+  //  {
+  //      audioEngine_->Update();
+  //  }
 }
+
 
 void Stage::Draw()
 {
@@ -216,6 +235,8 @@ void Stage::Draw()
 }
 void Stage::Release()
 {
+    //testSound_.reset();
+    //audioEngine_.reset();
 }
 
 
