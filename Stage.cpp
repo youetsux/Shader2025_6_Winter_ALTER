@@ -11,6 +11,8 @@
 #include "imgui/imgui_impl_dx11.h"
 #include "imgui/imgui_impl_win32.h"
 
+#include "Engine/Audio.h"
+
 
 
 Stage::Stage(GameObject* parent)
@@ -90,6 +92,9 @@ void Stage::Initialize()
     //    audioEngine_.get(),
     //    L"Assets/Audio/A1_02033.WAV"
     //);
+    file_path testPath = "Assets/Audio/A1_02033.WAV";
+    Audio::Load("test", testPath);
+  
 
 }
 
@@ -169,6 +174,10 @@ void Stage::Update()
   //  {
   //      audioEngine_->Update();
   //  }
+	if (Input::IsKeyDown(DIK_P))
+    {
+        Audio::Play("test");
+    }
 }
 
 

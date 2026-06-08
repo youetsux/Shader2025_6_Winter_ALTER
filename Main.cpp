@@ -1,4 +1,4 @@
-// MyFirstGame.cpp : ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã®ã‚¨ãƒ³ãƒˆãƒª ãƒã‚¤ãƒ³ãƒˆã‚’å®šç¾©ã—ã¾ã™ã€‚
+// MyFirstGame.cpp : ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚ÌƒGƒ“ƒgƒŠ ƒ|ƒCƒ“ƒg‚ð’è‹`‚µ‚Ü‚·B
 //
 
 #include "framework.h"
@@ -17,6 +17,8 @@
 #include "imgui/imgui_impl_dx11.h"
 #include "imgui/imgui_impl_win32.h"
 
+#include "Engine/Audio.h"
+
 
 #pragma comment(lib, "winmm.lib")
 
@@ -25,18 +27,18 @@ HWND hWnd = nullptr;
 
 #define MAX_LOADSTRING 100
 
-const wchar_t* WIN_CLASS_NAME = L"SAMPLE GAME WINDOW"; // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ ã‚¯ãƒ©ã‚¹å
-const int WINDOW_WIDTH = 800;  //ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®å¹…
-const int WINDOW_HEIGHT = 600; //ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®é«˜ã• //SVGAã‚µã‚¤ã‚º
+const wchar_t* WIN_CLASS_NAME = L"SAMPLE GAME WINDOW"; // ƒEƒBƒ“ƒhƒE ƒNƒ‰ƒX–¼
+const int WINDOW_WIDTH = 800;  //ƒEƒBƒ“ƒhƒE‚Ì•
+const int WINDOW_HEIGHT = 600; //ƒEƒBƒ“ƒhƒE‚Ì‚‚³ //SVGAƒTƒCƒY
 
 RootJob* pRootJob = nullptr;
 
-// ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°:
-HINSTANCE hInst;                                // ç¾åœ¨ã®ã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ã‚¤ã‚¹
-WCHAR szTitle[MAX_LOADSTRING];                  // ã‚¿ã‚¤ãƒˆãƒ« ãƒãƒ¼ã®ãƒ†ã‚­ã‚¹ãƒˆ
-WCHAR szWindowClass[MAX_LOADSTRING];            // ãƒ¡ã‚¤ãƒ³ ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ ã‚¯ãƒ©ã‚¹å
+// ƒOƒ[ƒoƒ‹•Ï”:
+HINSTANCE hInst;                                // Œ»Ý‚ÌƒCƒ“ƒ^[ƒtƒFƒCƒX
+WCHAR szTitle[MAX_LOADSTRING];                  // ƒ^ƒCƒgƒ‹ ƒo[‚ÌƒeƒLƒXƒg
+WCHAR szWindowClass[MAX_LOADSTRING];            // ƒƒCƒ“ ƒEƒBƒ“ƒhƒE ƒNƒ‰ƒX–¼
 
-// ã“ã®ã‚³ãƒ¼ãƒ‰ ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã«å«ã¾ã‚Œã‚‹é–¢æ•°ã®å®£è¨€ã‚’è»¢é€ã—ã¾ã™:
+// ‚±‚ÌƒR[ƒh ƒ‚ƒWƒ…[ƒ‹‚ÉŠÜ‚Ü‚ê‚éŠÖ”‚ÌéŒ¾‚ð“]‘—‚µ‚Ü‚·:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -51,23 +53,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // TODO: ã“ã“ã«ã‚³ãƒ¼ãƒ‰ã‚’æŒ¿å…¥ã—ã¦ãã ã•ã„ã€‚
+    // TODO: ‚±‚±‚ÉƒR[ƒh‚ð‘}“ü‚µ‚Ä‚­‚¾‚³‚¢B
 
-	//szWindowClass = WIN_CLASS_NAME; // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ ã‚¯ãƒ©ã‚¹åã‚’è¨­å®š
+	//szWindowClass = WIN_CLASS_NAME; // ƒEƒBƒ“ƒhƒE ƒNƒ‰ƒX–¼‚ðÝ’è
 
-    // ã‚°ãƒ­ãƒ¼ãƒãƒ«æ–‡å­—åˆ—ã‚’åˆæœŸåŒ–ã™ã‚‹
+    // ƒOƒ[ƒoƒ‹•¶Žš—ñ‚ð‰Šú‰»‚·‚é
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_MYFIRSTGAME, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
 
-    // ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³åˆæœŸåŒ–ã®å®Ÿè¡Œ:
+    // ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‰Šú‰»‚ÌŽÀs:
     if (!InitInstance (hInstance, nCmdShow))
     {
         return FALSE;
     }
 
-    //Direct3DåˆæœŸåŒ–
+    //Direct3D‰Šú‰»
     HRESULT hr;
     hr = Direct3D::Initialize(WINDOW_WIDTH, WINDOW_HEIGHT, hWnd);
     if (FAILED(hr))
@@ -75,7 +77,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return 0;
     }
 
-    //ImguiåˆæœŸåŒ–
+    //Imgui‰Šú‰»
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -85,9 +87,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         ImGui::StyleColorsLight();
     }
 
-	Camera::Initialize(); // ã‚«ãƒ¡ãƒ©ã®åˆæœŸåŒ–
+	Camera::Initialize(); // ƒJƒƒ‰‚Ì‰Šú‰»
 
-	Input::Initialize(hWnd); // å…¥åŠ›ã®åˆæœŸåŒ–
+	Input::Initialize(hWnd); // “ü—Í‚Ì‰Šú‰»
+
+	Audio::Initialize(); // ƒI[ƒfƒBƒI‚Ì‰Šú‰»
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MYFIRSTGAME));
 
@@ -97,22 +101,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	pRootJob->Initialize();
     
     
-    // ãƒ¡ã‚¤ãƒ³ ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ ãƒ«ãƒ¼ãƒ—:
+    // ƒƒCƒ“ ƒƒbƒZ[ƒW ƒ‹[ƒv:
     while(msg.message != WM_QUIT)
     {
-        //ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚ã‚Š
+        //ƒƒbƒZ[ƒW‚ ‚è
 
         if (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-        //ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãªã—
+        //ƒƒbƒZ[ƒW‚È‚µ
 
         timeBeginPeriod(1);
-		static DWORD countFps = 0; //FPSè¨ˆæ¸¬ç”¨ã‚«ã‚¦ãƒ³ã‚¿
-		static DWORD startTime = timeGetTime();//åˆå›žã®æ™‚é–“ã‚’ä¿å­˜
-		DWORD nowTime = timeGetTime();//ç¾åœ¨ã®æ™‚é–“ã‚’å–å¾—
+		static DWORD countFps = 0; //FPSŒv‘ª—pƒJƒEƒ“ƒ^
+		static DWORD startTime = timeGetTime();//‰‰ñ‚ÌŽžŠÔ‚ð•Û‘¶
+		DWORD nowTime = timeGetTime();//Œ»Ý‚ÌŽžŠÔ‚ðŽæ“¾
         static DWORD lastUpdateTime = nowTime;
         
 
@@ -137,11 +141,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         timeEndPeriod(1);
 
-		//ã‚²ãƒ¼ãƒ ã®å‡¦ç†
-		Camera::Update(); // ã‚«ãƒ¡ãƒ©ã®æ›´æ–°
-		Input::Update(); // å…¥åŠ›ã®æ›´æ–°
+		//ƒQ[ƒ€‚Ìˆ—
+		Camera::Update(); // ƒJƒƒ‰‚ÌXV
+		Input::Update(); // “ü—Í‚ÌXV
 
 		pRootJob->UpdateSub();
+
+		Audio::Update(); // ƒI[ƒfƒBƒI‚ÌXV
 
         if (Input::IsKeyDown(DIK_ESCAPE))
         {
@@ -156,7 +162,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         Direct3D::BeginDraw();
 
-		//pRootJobã‹ã‚‰ã€ã™ã¹ã¦ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®æç”»ã‚’ã™ã‚‹
+		//pRootJob‚©‚çA‚·‚×‚Ä‚ÌƒIƒuƒWƒFƒNƒg‚Ì•`‰æ‚ð‚·‚é
 		pRootJob->DrawSub();
 
         Direct3D::EndDraw();
@@ -164,6 +170,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	Model::Release();
 	pRootJob->ReleaseSub();
+    Audio::Release();
 	Input::Release();
     Direct3D::Release();
 
@@ -173,9 +180,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 
 //
-//  é–¢æ•°: MyRegisterClass()
+//  ŠÖ”: MyRegisterClass()
 //
-//  ç›®çš„: ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ ã‚¯ãƒ©ã‚¹ã‚’ç™»éŒ²ã—ã¾ã™ã€‚
+//  –Ú“I: ƒEƒBƒ“ƒhƒE ƒNƒ‰ƒX‚ð“o˜^‚µ‚Ü‚·B
 //
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
@@ -199,25 +206,25 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 }
 
 //
-//   é–¢æ•°: InitInstance(HINSTANCE, int)
+//   ŠÖ”: InitInstance(HINSTANCE, int)
 //
-//   ç›®çš„: ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ ãƒãƒ³ãƒ‰ãƒ«ã‚’ä¿å­˜ã—ã¦ã€ãƒ¡ã‚¤ãƒ³ ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆã—ã¾ã™
+//   –Ú“I: ƒCƒ“ƒXƒ^ƒ“ƒX ƒnƒ“ƒhƒ‹‚ð•Û‘¶‚µ‚ÄAƒƒCƒ“ ƒEƒBƒ“ƒhƒE‚ðì¬‚µ‚Ü‚·
 //
-//   ã‚³ãƒ¡ãƒ³ãƒˆ:
+//   ƒRƒƒ“ƒg:
 //
-//        ã“ã®é–¢æ•°ã§ã€ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°ã§ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ ãƒãƒ³ãƒ‰ãƒ«ã‚’ä¿å­˜ã—ã€
-//        ãƒ¡ã‚¤ãƒ³ ãƒ—ãƒ­ã‚°ãƒ©ãƒ  ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆãŠã‚ˆã³è¡¨ç¤ºã—ã¾ã™ã€‚
+//        ‚±‚ÌŠÖ”‚ÅAƒOƒ[ƒoƒ‹•Ï”‚ÅƒCƒ“ƒXƒ^ƒ“ƒX ƒnƒ“ƒhƒ‹‚ð•Û‘¶‚µA
+//        ƒƒCƒ“ ƒvƒƒOƒ‰ƒ€ ƒEƒBƒ“ƒhƒE‚ðì¬‚¨‚æ‚Ñ•\Ž¦‚µ‚Ü‚·B
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   hInst = hInstance; // ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°ã«ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ ãƒãƒ³ãƒ‰ãƒ«ã‚’æ ¼ç´ã™ã‚‹
+   hInst = hInstance; // ƒOƒ[ƒoƒ‹•Ï”‚ÉƒCƒ“ƒXƒ^ƒ“ƒX ƒnƒ“ƒhƒ‹‚ðŠi”[‚·‚é
 
 
-   //ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚ºã®è¨ˆç®—
+   //ƒEƒBƒ“ƒhƒEƒTƒCƒY‚ÌŒvŽZ
    RECT winRect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
    AdjustWindowRect(&winRect, WS_OVERLAPPEDWINDOW, FALSE);
-   int winW = winRect.right - winRect.left;     //ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦å¹…
-   int winH = winRect.bottom - winRect.top;     //ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦é«˜ã•
+   int winW = winRect.right - winRect.left;     //ƒEƒBƒ“ƒhƒE•
+   int winH = winRect.bottom - winRect.top;     //ƒEƒBƒ“ƒhƒE‚‚³
 
    hWnd = CreateWindowW(szWindowClass, WIN_CLASS_NAME, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, winW, winH, nullptr, nullptr, hInstance, nullptr);
@@ -233,24 +240,24 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-//  ImGuiã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸å‡¦ç†
+//  ImGui‚ÌƒƒbƒZ[ƒWˆ—
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler
 (HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
 //
-//  é–¢æ•°: WndProc(HWND, UINT, WPARAM, LPARAM)
+//  ŠÖ”: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
-//  ç›®çš„: ãƒ¡ã‚¤ãƒ³ ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’å‡¦ç†ã—ã¾ã™ã€‚
+//  –Ú“I: ƒƒCƒ“ ƒEƒBƒ“ƒhƒE‚ÌƒƒbƒZ[ƒW‚ðˆ—‚µ‚Ü‚·B
 //
-//  WM_COMMAND  - ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã®å‡¦ç†
-//  WM_PAINT    - ãƒ¡ã‚¤ãƒ³ ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’æç”»ã™ã‚‹
-//  WM_DESTROY  - ä¸­æ­¢ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’è¡¨ç¤ºã—ã¦æˆ»ã‚‹
+//  WM_COMMAND  - ƒAƒvƒŠƒP[ƒVƒ‡ƒ“ ƒƒjƒ…[‚Ìˆ—
+//  WM_PAINT    - ƒƒCƒ“ ƒEƒBƒ“ƒhƒE‚ð•`‰æ‚·‚é
+//  WM_DESTROY  - ’†Ž~ƒƒbƒZ[ƒW‚ð•\Ž¦‚µ‚Ä–ß‚é
 //
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	// ImGuiã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸å‡¦ç†ã‚’æœ€åˆã«è¡Œã†
+	// ImGui‚ÌƒƒbƒZ[ƒWˆ—‚ðÅ‰‚És‚¤
 	if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
 		return true;
 
@@ -259,7 +266,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
-            // é¸æŠžã•ã‚ŒãŸãƒ¡ãƒ‹ãƒ¥ãƒ¼ã®è§£æž:
+            // ‘I‘ð‚³‚ê‚½ƒƒjƒ…[‚Ì‰ðÍ:
             switch (wmId)
             {
             case IDM_ABOUT:
@@ -277,7 +284,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: HDC ã‚’ä½¿ç”¨ã™ã‚‹æç”»ã‚³ãƒ¼ãƒ‰ã‚’ã“ã“ã«è¿½åŠ ã—ã¦ãã ã•ã„...
+            // TODO: HDC ‚ðŽg—p‚·‚é•`‰æƒR[ƒh‚ð‚±‚±‚É’Ç‰Á‚µ‚Ä‚­‚¾‚³‚¢...
             EndPaint(hWnd, &ps);
         }
         break;
@@ -298,7 +305,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-// ãƒãƒ¼ã‚¸ãƒ§ãƒ³æƒ…å ±ãƒœãƒƒã‚¯ã‚¹ã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ ãƒãƒ³ãƒ‰ãƒ©ãƒ¼ã§ã™ã€‚
+// ƒo[ƒWƒ‡ƒ“î•ñƒ{ƒbƒNƒX‚ÌƒƒbƒZ[ƒW ƒnƒ“ƒhƒ‰[‚Å‚·B
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
