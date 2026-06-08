@@ -1,6 +1,5 @@
 #include "Audio.h"
 
-#include "Audio.h"
 #include <Audio.h>
 #include <memory>
 #include <unordered_map>
@@ -8,8 +7,12 @@
 namespace
 {
     std::unique_ptr<DirectX::AudioEngine> audioEngine_;
-    std::unordered_map<std::string, std::unique_ptr<DirectX::SoundEffect>> sounds_;
-	//¶ƒ|ƒCƒ“ƒ^‚ÅŠÇ—‚·‚éê‡
+    std::unordered_map<std::string, std::unique_ptr<DirectX::SoundEffect>> seSounds_;
+    std::unordered_map<std::string, std::unique_ptr<DirectX::SoundEffect>> bgmSounds_;
+
+	std::unique_ptr<DirectX::SoundEffectInstance> currentBGM_;
+	std::string currentBGMName_;
+	//ç”Ÿãƒã‚¤ãƒ³ã‚¿ã§ç®¡ç†ã™ã‚‹å ´åˆ
     //DirectX::AudioEngine* audioEngine_ = nullptr;
     //std::unordered_map<std::string, DirectX::SoundEffect*> sounds_;
 }
@@ -32,9 +35,12 @@ void Audio::Update()
 
 void Audio::Release()
 {
-    sounds_.clear();
+    //sounds_.clear();
+	currentBGM_.reset();
+	bgmSounds_.clear();
+	seSounds_.clear();
     audioEngine_.reset();
-	//¶ƒ|ƒCƒ“ƒ^‚ÅŠÇ—‚·‚é‚Æ‚«‚ÍA‡”Ô‚É‹C‚ğ•t‚¯‚Ädelete‚·‚é•K—v‚ª‚ ‚é
+	//ç”Ÿãƒã‚¤ãƒ³ã‚¿ã§ç®¡ç†ã™ã‚‹ã¨ãã¯ã€é †ç•ªã«æ°—ã‚’ä»˜ã‘ã¦deleteã™ã‚‹å¿…è¦ãŒã‚ã‚‹
     //for (auto& sound : sounds_)
     //{
     //    delete sound.second;
@@ -45,18 +51,18 @@ void Audio::Release()
     //audioEngine_ = nullptr;
 }
 
-bool Audio::Load(const std::string& name, file_path& filepath)
+bool Audio::LoadSE(const std::string& name, file_path& filepath)
 {
     if (audioEngine_ == nullptr)
     {
         return false;
     }
 
-    sounds_[name] = std::make_unique<DirectX::SoundEffect>(
+    seSounds_[name] = std::make_unique<DirectX::SoundEffect>(
         audioEngine_.get(),
         filepath.c_str()
     );
-	//¶ƒ|ƒCƒ“ƒ^‚ÅŠÇ—‚·‚éê‡
+	//ç”Ÿãƒã‚¤ãƒ³ã‚¿ã§ç®¡ç†ã™ã‚‹å ´åˆ
     //if (audioEngine_ == nullptr)
     //{
     //    return false;
@@ -71,13 +77,56 @@ bool Audio::Load(const std::string& name, file_path& filepath)
     return true;
 }
 
-void Audio::Play(const std::string& name)
+void Audio::PlaySE(const std::string& name)
 {
-    auto it = sounds_.find(name);
-    if (it == sounds_.end())
+    auto it = seSounds_.find(name);
+    if (it == seSounds_.end())
     {
         return;
     }
 
     it->second->Play();
+}
+
+bool Audio::LoadBGM(const std::string& name, file_path& filepath)
+{
+	if (audioEngine_ == nullptr)
+	{
+		return false;
+	}
+	bgmSounds_[name] = std::make_unique<DirectX::SoundEffect>(
+		audioEngine_.get(),
+		filepath.c_str()
+	);
+	return true;
+}
+
+void Audio::PlayBGM(const std::string& name)
+{
+	auto it = bgmSounds_.find(name);
+	if (it == bgmSounds_.end())
+	{
+		return;
+	}
+	if (currentBGM_ != nullptr)
+    {
+        currentBGM_->Stop(true);
+		currentBGM_.reset();
+	}
+
+	currentBGM_ = it->second->CreateInstance();
+	currentBGM_->Play(true);
+	currentBGMName_ = name;
+
+}
+
+void Audio::StopBGM()
+{
+    if (currentBGM_ != nullptr)
+    {
+        currentBGM_->Stop(true);
+        currentBGM_.reset();
+        currentBGMName_.clear();
+    }
+
 }

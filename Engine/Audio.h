@@ -10,7 +10,12 @@ namespace Audio
     void Update();
     void Release();
 
-    bool Load(const std::string& name, file_path &filepath);
-    void Play(const std::string& name);
+    bool LoadSE(const std::string& name, file_path &filepath);
+    void PlaySE(const std::string& name);
+
+    bool LoadBGM(const std::string& name, file_path& filepath);
+    void PlayBGM(const std::string& name);
+	void StopBGM();
+
 };
 
