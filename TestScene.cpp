@@ -58,6 +58,12 @@ void TestScene::Update()
 	{
 		Audio::StopBGM();
 	}
+
+	// ToDo10: key 1=full / 2=half / 3=mute / F=BGM fadeout(2sec)
+	if (Input::IsKeyDown(DIK_1)) { Audio::SetMasterVolume(1.0f); }
+	if (Input::IsKeyDown(DIK_2)) { Audio::SetMasterVolume(0.5f); }
+	if (Input::IsKeyDown(DIK_3)) { Audio::SetMasterVolume(0.0f); }
+	if (Input::IsKeyDown(DIK_F)) { Audio::FadeOutBGM(2.0f); }
 }
 
 void TestScene::Draw()

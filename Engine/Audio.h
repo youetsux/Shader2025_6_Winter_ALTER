@@ -18,5 +18,11 @@ namespace Audio
 	void PlayBGM(const std::string& name, bool loop = true);
 	void StopBGM();
 
+	// ToDo01: 音量設定・フェードアウト関数を追加する
+	void SetMasterVolume(float volume);
+	void SetSEVolume(float volume);
+	void SetBGMVolume(float volume);
+
+	void FadeOutBGM(float fadeTime);
 };
 
