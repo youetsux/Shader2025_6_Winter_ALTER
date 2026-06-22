@@ -1,8 +1,17 @@
-#include "Audio.h"
+﻿#include "Audio.h"
 
 #include <Audio.h>
 #include <memory>
 #include <unordered_map>
+
+
+
+//ToDo01	Engine / Audio.h	PlayBGM に bool loop = true を追加
+//ToDo02	Engine / Audio.cpp	PlayBGM の引数を bool loop に変更 → Play(loop) に渡す
+//ToDo03	TestScene.cpp	#include "Engine/Audio.h" を追加
+//ToDo04	TestScene.cpp Initialize()	SE / BGMをロードしてBGMを再生
+//ToDo05	TestScene.cpp Update()	キー入力でSE再生・BGM停止
+
 
 namespace
 {
@@ -101,7 +110,8 @@ bool Audio::LoadBGM(const std::string& name, file_path& filepath)
 	return true;
 }
 
-void Audio::PlayBGM(const std::string& name)
+// ToDo02: 引数にloopを追加して、Play()に渡す
+void Audio::PlayBGM(const std::string& name, bool loop)
 {
 	auto it = bgmSounds_.find(name);
 	if (it == bgmSounds_.end())
@@ -115,7 +125,7 @@ void Audio::PlayBGM(const std::string& name)
 	}
 
 	currentBGM_ = it->second->CreateInstance();
-	currentBGM_->Play(true);
+	currentBGM_->Play(loop);	// ToDo02: trueではなくloop変数を渡す
 	currentBGMName_ = name;
 
 }

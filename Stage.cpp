@@ -11,10 +11,9 @@
 #include "imgui/imgui_impl_dx11.h"
 #include "imgui/imgui_impl_win32.h"
 
-#include "Engine/Audio.h"
-
-
-
+// StageではAudioを直接使わない。
+// サウンドのロード・再生は TestScene.cpp でまとめて管理する。
+// #include "Engine/Audio.h" は TestScene.cpp に移動した。
 Stage::Stage(GameObject* parent)
 	:GameObject(parent, "Stage"),  pConstantBuffer_(nullptr)
 {
@@ -87,23 +86,15 @@ void Stage::Initialize()
 	SAFE_RELEASE(pShadowSampler); // コンテキストが参照を保持するのでここで解放OK
 
 
-    //audioEngine_ = std::make_unique<DirectX::AudioEngine>();
-    //testSound_ = std::make_unique<DirectX::SoundEffect>(
-    //    audioEngine_.get(),
-    //    L"Assets/Audio/A1_02033.WAV"
-    //);
-    file_path testPath1 = "Assets/Audio/A1_02033.WAV";
-    Audio::LoadSE("UFO1", testPath1);
-    file_path testPath2 = "Assets/Audio/A1_02034.WAV";
-    Audio::LoadSE("UFO2", testPath2);
-    file_path testPath3 = "Assets/Audio/A1_02035.WAV";
-    Audio::LoadSE("UFO3", testPath3);
-	file_path bgmPath = "Assets/Audio/BGM1.wav";
-	Audio::LoadBGM("BGM1", bgmPath);
-
-	Audio::PlayBGM("BGM1");
-
-}
+	// 以前は Stage内で試験的に LoadSE / LoadBGM / PlayBGM を呼んでいた。
+	// 「Stageはゲームオブジェクト」「TestSceneはシーン全体の管理」に役割を分けるため、
+	// Audioの初期化・再生は TestScene::Initialize() に移動した。
+	//audioEngine_ = std::make_unique<DirectX::AudioEngine>();
+	//testSound_ = std::make_unique<DirectX::SoundEffect>(
+	//    audioEngine_.get(),
+	//    L"Assets/Audio/A1_02033.WAV"
+	//);
+	}
 
 void Stage::Update()
 {
@@ -181,14 +172,10 @@ void Stage::Update()
   //  {
   //      audioEngine_->Update();
   //  }
-	string seNames[] = { "UFO1", "UFO2", "UFO3" };
-	if (Input::IsKeyDown(DIK_P))
-    {
-		static int index = 0;
-        Audio::PlaySE(seNames[index]);
-        index = (index + 1) % 3;
-    }
-}
+
+	// 以前は Stage内で PlaySE を呼んでいた。
+	// キー入力によるサウンド再生は TestScene::Update() に移動した。
+	}
 
 
 void Stage::Draw()

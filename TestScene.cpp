@@ -2,6 +2,8 @@
 #include "Engine/Input.h"
 #include "Engine/SceneManager.h"
 #include "Stage.h"
+// ToDo03: Audio機能を使うためにインクルードする
+#include "Engine/Audio.h"
 
 
 TestScene::TestScene(GameObject* parent)
@@ -16,6 +18,18 @@ TestScene::~TestScene()
 void TestScene::Initialize()
 {
 	Instantiate<Stage>(this);
+
+	// ToDo04: SEとBGMのファイルパスを指定してロードし、BGMを再生する
+	// ToDo04a: Assets/Audio/SE/ と Assets/Audio/BGM/ フォルダにwavファイルを入れる
+	file_path shotPath   = "Assets/Audio/SE/A1_02033.WAV";
+	file_path damagePath = "Assets/Audio/SE/A1_02034.WAV";
+	file_path stagePath  = "Assets/Audio/BGM/BGM1.wav";
+
+	Audio::LoadSE("shot", shotPath);
+	Audio::LoadSE("damage", damagePath);
+	Audio::LoadBGM("stage", stagePath);
+
+	Audio::PlayBGM("stage", true);
 }
 
 void TestScene::Update()
@@ -29,6 +43,21 @@ void TestScene::Update()
 
 
 
+	// ToDo05: キー入力でSEを鳴らす・BGMを止める
+	if (Input::IsKeyDown(DIK_SPACE))
+	{
+		Audio::PlaySE("shot");
+	}
+
+	if (Input::IsKeyDown(DIK_D))
+	{
+		Audio::PlaySE("damage");
+	}
+
+	if (Input::IsKeyDown(DIK_B))
+	{
+		Audio::StopBGM();
+	}
 }
 
 void TestScene::Draw()
