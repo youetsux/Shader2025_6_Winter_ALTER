@@ -59,7 +59,7 @@ void Stage::Initialize()
 	assert(hRoom_ >= 0);
 	hGround_ = Model::Load("plane3.fbx");
 	assert(hGround_ >= 0);
-	hDonut_ = Model::Load("Donut_phong.fbx");
+	hDonut_ = Model::Load("alphaBox.fbx");
     //hDonut_ = Model::Load("oden.fbx");
 	assert(hDonut_ >= 0);
 	//pMelbourne_ = new Sprite(L"Assets\\melbourne.png");
@@ -191,7 +191,7 @@ void Stage::Draw()
     // 部屋はレシーバー（影を受ける側）なのでシャドウパスには含めない
     // 理由：部屋をここに入れると外壁がライトを遮り、室内が全て影になる
     static Transform tDonut;
-    tDonut.scale_    = { 0.2f, 0.2f, 0.2f };
+    //tDonut.scale_    = { 0.2f, 0.2f, 0.2f };
     tDonut.position_ = { 0, 0.5f, 0.0f };
     tDonut.rotate_.y += 0.1f;
     Model::SetTransform(hDonut_, tDonut);
